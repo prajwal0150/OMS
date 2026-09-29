@@ -1,0 +1,117 @@
+import { PERMISSIONS } from './permissions';
+import type { Permission } from './permissions';
+
+const MODULE_LABELS: Record<string, string> = {
+  organization: 'Organization',
+  district: 'District',
+  unit: 'Units',
+  community: 'Communities',
+  member: 'Members',
+  'member.account': 'Member accounts',
+  committee: 'Committees',
+  event: 'Events',
+  attendance: 'Attendance',
+  content: 'Content',
+  announcement: 'Announcements',
+  media: 'Media library',
+  document: 'Documents',
+  report: 'Reports',
+  'admin.account': 'Administrators',
+  user: 'Users',
+  role: 'Roles',
+  permission: 'Permissions',
+  audit: 'Audit logs',
+  settings: 'Settings',
+  portal: 'Member portal',
+  profile: 'Member portal',
+};
+
+type CatalogEntry = [Permission, string];
+
+const ENTRIES: CatalogEntry[] = [
+  [PERMISSIONS.ORGANIZATION_VIEW, 'View organization'],
+  [PERMISSIONS.ORGANIZATION_UPDATE, 'Update organization'],
+  [PERMISSIONS.DISTRICT_VIEW, 'View district'],
+  [PERMISSIONS.DISTRICT_UPDATE, 'Update district'],
+  [PERMISSIONS.UNIT_CREATE, 'Create unit'],
+  [PERMISSIONS.UNIT_VIEW, 'View units'],
+  [PERMISSIONS.UNIT_UPDATE, 'Update unit'],
+  [PERMISSIONS.UNIT_DELETE, 'Delete unit'],
+  [PERMISSIONS.COMMUNITY_CREATE, 'Create community'],
+  [PERMISSIONS.COMMUNITY_VIEW, 'View communities'],
+  [PERMISSIONS.COMMUNITY_UPDATE, 'Update community'],
+  [PERMISSIONS.COMMUNITY_DELETE, 'Delete community'],
+  [PERMISSIONS.MEMBER_CREATE, 'Create member'],
+  [PERMISSIONS.MEMBER_VIEW, 'View members'],
+  [PERMISSIONS.MEMBER_UPDATE, 'Update member'],
+  [PERMISSIONS.MEMBER_DELETE, 'Delete member'],
+  [PERMISSIONS.MEMBER_ACCOUNT_CREATE, 'Create member account'],
+  [PERMISSIONS.MEMBER_ACCOUNT_VIEW, 'View member accounts'],
+  [PERMISSIONS.MEMBER_ACCOUNT_UPDATE, 'Update member account'],
+  [PERMISSIONS.MEMBER_ACCOUNT_ACTIVATE, 'Activate member account'],
+  [PERMISSIONS.MEMBER_ACCOUNT_DEACTIVATE, 'Deactivate member account'],
+  [PERMISSIONS.MEMBER_ACCOUNT_RESET_PASSWORD, 'Reset member account password'],
+  [PERMISSIONS.COMMITTEE_CREATE, 'Create committee'],
+  [PERMISSIONS.COMMITTEE_VIEW, 'View committees'],
+  [PERMISSIONS.COMMITTEE_UPDATE, 'Update committee'],
+  [PERMISSIONS.COMMITTEE_DELETE, 'Delete committee'],
+  [PERMISSIONS.EVENT_CREATE, 'Create event'],
+  [PERMISSIONS.EVENT_VIEW, 'View events'],
+  [PERMISSIONS.EVENT_UPDATE, 'Update event'],
+  [PERMISSIONS.EVENT_DELETE, 'Delete event'],
+  [PERMISSIONS.ATTENDANCE_CREATE, 'Record attendance'],
+  [PERMISSIONS.ATTENDANCE_VIEW, 'View attendance'],
+  [PERMISSIONS.ATTENDANCE_UPDATE, 'Update attendance'],
+  [PERMISSIONS.CONTENT_CREATE, 'Create content'],
+  [PERMISSIONS.CONTENT_VIEW, 'View content'],
+  [PERMISSIONS.CONTENT_UPDATE, 'Update content'],
+  [PERMISSIONS.CONTENT_DELETE, 'Delete content'],
+  [PERMISSIONS.CONTENT_PUBLISH, 'Publish content'],
+  [PERMISSIONS.CONTENT_APPROVE, 'Approve content'],
+  [PERMISSIONS.ANNOUNCEMENT_CREATE, 'Create announcement'],
+  [PERMISSIONS.ANNOUNCEMENT_VIEW, 'View announcements'],
+  [PERMISSIONS.ANNOUNCEMENT_UPDATE, 'Update announcement'],
+  [PERMISSIONS.ANNOUNCEMENT_DELETE, 'Delete announcement'],
+  [PERMISSIONS.MEDIA_CREATE, 'Upload media'],
+  [PERMISSIONS.MEDIA_VIEW, 'View media library'],
+  [PERMISSIONS.MEDIA_DELETE, 'Delete media'],
+  [PERMISSIONS.DOCUMENT_CREATE, 'Upload document'],
+  [PERMISSIONS.DOCUMENT_VIEW, 'View documents'],
+  [PERMISSIONS.DOCUMENT_UPDATE, 'Update document'],
+  [PERMISSIONS.DOCUMENT_DELETE, 'Delete document'],
+  [PERMISSIONS.REPORT_VIEW, 'View reports'],
+  [PERMISSIONS.REPORT_EXPORT, 'Export reports'],
+  [PERMISSIONS.ADMIN_ACCOUNT_CREATE, 'Create administrator'],
+  [PERMISSIONS.ADMIN_ACCOUNT_VIEW, 'View administrators'],
+  [PERMISSIONS.ADMIN_ACCOUNT_UPDATE, 'Update administrator'],
+  [PERMISSIONS.ADMIN_ACCOUNT_ACTIVATE, 'Activate administrator'],
+  [PERMISSIONS.ADMIN_ACCOUNT_DEACTIVATE, 'Deactivate administrator'],
+  [PERMISSIONS.ADMIN_ACCOUNT_SUSPEND, 'Suspend administrator'],
+  [PERMISSIONS.ADMIN_ACCOUNT_RESET_PASSWORD, 'Reset administrator password'],
+  [PERMISSIONS.ADMIN_ACCOUNT_ASSIGN_SCOPE, 'Assign administrator scope'],
+  [PERMISSIONS.USER_MANAGE, 'Manage users'],
+  [PERMISSIONS.ROLE_MANAGE, 'Manage roles'],
+  [PERMISSIONS.PERMISSION_MANAGE, 'Manage permissions'],
+  [PERMISSIONS.AUDIT_VIEW, 'View audit logs'],
+  [PERMISSIONS.SETTINGS_MANAGE, 'Manage settings'],
+  [PERMISSIONS.PORTAL_ACCESS, 'Access member portal'],
+  [PERMISSIONS.PROFILE_SELF_UPDATE, 'Update own profile'],
+];
+
+const moduleOf = (permission: string): string => {
+  const segments = permission.split('.');
+  const objectPath = segments.slice(0, -1).join('.');
+  return MODULE_LABELS[objectPath] ?? 'General';
+};
+
+/** Human readable permission catalog used to seed the Permission collection. */
+export const PERMISSION_CATALOG = ENTRIES.map(([key, label]) => ({
+  key,
+  label,
+  module: moduleOf(key),
+  description: `${label} — ${moduleOf(key)} module.`,
+}));
+
+export const PERMISSION_MODULES = Array.from(
+  new Set(PERMISSION_CATALOG.map((entry) => entry.module)),
+).sort();

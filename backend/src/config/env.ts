@@ -1,0 +1,65 @@
+import path from 'node:path';
+import dotenv from 'dotenv';
+import { z } from 'zod';
+
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
+const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  PORT: z.coerce.number().int().positive().default(5000),
+  API_PREFIX: z.string().default('/api'),
+
+  MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
+  MONGODB_TEST_URI: z.string().default('mongodb://127.0.0.1:27017/hps_oms_test'),
+
+  JWT_ACCESS_SECRET: z.string().min(10, 'JWT_ACCESS_SECRET is required'),
+  JWT_REFRESH_SECRET: z.string().min(10, 'JWT_REFRESH_SECRET is required'),
+  JWT_ACCESS_EXPIRES_IN: z.string().default('30m'),
+  JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
+  BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(4).max(15).default(10),
+
+  CLIENT_URL: z.string().default('http://localhost:5173'),
+
+  SUPER_ADMIN_EMAIL: z.string().email().optional(),
+  SUPER_ADMIN_PASSWORD: z.string().min(8).optional(),
+  SUPER_ADMIN_FIRST_NAME: z.string().default('Super'),
+  SUPER_ADMIN_LAST_NAME: z.string().default('Admin'),
+  SEED_DEMO_DATA: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
+
+  STORAGE_PROVIDER: z.enum(['local', 'cloudinary', 's3']).default('local'),
+  UPLOAD_DIR: z.string().default('uploads'),
+  MAX_IMAGE_SIZE_MB: z.coerce.number().default(5),
+  MAX_VIDEO_SIZE_MB: z.coerce.number().default(100),
+  MAX_DOCUMENT_SIZE_MB: z.coerce.number().default(25),
+});
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  const details = parsed.error.issues
+    .map((issue) => `  - ${issue.path.join('.')}: ${issue.message}`)
+    .join('\n');
+  // eslint-disable-next-line no-console
+  console.error(`Invalid environment configuration:\n${details}`);
+  process.exit(1);
+}
+
+const raw = parsed.data;
+
+export const env = {
+  ...raw,
+  isProduction: raw.NODE_ENV === 'production',
+  isDevelopment: raw.NODE_ENV === 'development',
+  isTest: raw.NODE_ENV === 'test',
+  uploadDirAbsolute: path.isAbsolute(raw.UPLOAD_DIR)
+    ? raw.UPLOAD_DIR
+    : path.resolve(process.cwd(), raw.UPLOAD_DIR),
+  clientUrls: raw.CLIENT_URL.split(',')
+    .map((value) => value.trim())
+    .filter(Boolean),
+};
+
+export type Env = typeof env;

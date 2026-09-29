@@ -1,0 +1,128 @@
+@import 'tailwindcss';
+
+/*
+ * HEAVENLY PATH SUNSARI DISTRICT — compact enterprise design system.
+ * Default component radius is `rounded-lg`; `rounded-full` is reserved for
+ * avatars, status dots and circular icon buttons.
+ */
+@theme {
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-soft: #eff6ff;
+  --color-secondary: #0f172a;
+  --color-accent: #14b8a6;
+  --color-app-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-line: #e2e8f0;
+  --color-text: #0f172a;
+  --color-muted: #64748b;
+  --color-success: #16a34a;
+  --color-warning: #f59e0b;
+  --color-danger: #dc2626;
+
+  --radius-card: 0.5rem;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-app-bg text-text font-sans antialiased;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  /* Visible, consistent keyboard focus across the whole application. */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    @apply outline-2 outline-offset-1 outline-primary;
+  }
+
+  ::selection {
+    @apply bg-primary/15;
+  }
+}
+
+
+@layer components {
+  /* Dense, professional data table used by every admin list screen. */
+  .app-table {
+    @apply w-full border-collapse text-sm;
+  }
+
+  .app-table thead th {
+    @apply sticky top-0 z-10 border-b border-line bg-slate-50 px-3 py-2 text-left text-xs font-semibold tracking-wide text-muted uppercase whitespace-nowrap;
+  }
+
+  .app-table tbody td {
+    @apply border-b border-line px-3 py-2 align-middle;
+  }
+
+  .app-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .app-table tbody tr:hover {
+    @apply bg-slate-50/70;
+  }
+
+  /* Sanitized rich text (the server already strips unsafe markup). */
+  .rich-text {
+    @apply text-sm leading-relaxed text-slate-700;
+  }
+
+  .rich-text h1 {
+    @apply mt-4 mb-2 text-xl font-semibold text-secondary;
+  }
+  .rich-text h2 {
+    @apply mt-4 mb-2 text-lg font-semibold text-secondary;
+  }
+  .rich-text h3 {
+    @apply mt-3 mb-1.5 text-base font-semibold text-secondary;
+  }
+  .rich-text p {
+    @apply my-2;
+  }
+  .rich-text ul {
+    @apply my-2 list-disc pl-5;
+  }
+  .rich-text ol {
+    @apply my-2 list-decimal pl-5;
+  }
+  .rich-text blockquote {
+    @apply my-3 border-l-2 border-primary bg-primary/5 py-1.5 pr-2 pl-3 text-slate-600 italic;
+  }
+  .rich-text a {
+    @apply text-primary underline underline-offset-2;
+  }
+  .rich-text img {
+    @apply my-3 rounded-lg border border-line;
+  }
+  .rich-text iframe {
+    @apply my-3 w-full max-w-full rounded-lg border border-line;
+  }
+}
+
+/* Compact scrollbars keep dense panels from looking heavy. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background-color: #cbd5e1;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}

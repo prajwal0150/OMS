@@ -1,0 +1,21 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+*.tsbuildinfo
+
+# Environment (never commit real secrets)
+.env
+.env.local
+.env.*.local
+
+# Uploaded media (kept out of version control)
+uploads/*
+!uploads/.gitkeep
+
+# Logs / OS
+logs
+*.log
+.DS_Store
+Thumbs.db
