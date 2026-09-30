@@ -14,7 +14,27 @@ export const MEMBER_STATUS = {
 } as const;
 export type MemberStatus = (typeof MEMBER_STATUS)[keyof typeof MEMBER_STATUS];
 
+/** Review state of a member registered by a unit/community level account. */
+export const REGISTRATION_STATUS = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+export type RegistrationStatus = (typeof REGISTRATION_STATUS)[keyof typeof REGISTRATION_STATUS];
+
+/**
+ * How a member takes part in the organization. The district committee roles are
+ * declared first because that is the order every admin screen offers them in;
+ * the historical values are kept last so records created before them stay valid.
+ */
 export const MEMBERSHIP_TYPE = {
+  DISTRICT_CHIEF: 'DISTRICT_CHIEF',
+  SECRETARY: 'SECRETARY',
+  JOINT_SECRETARY: 'JOINT_SECRETARY',
+  CHAIRPERSON: 'CHAIRPERSON',
+  VICE_CHAIRPERSON: 'VICE_CHAIRPERSON',
+  TREASURER: 'TREASURER',
+  JOINT_TREASURER: 'JOINT_TREASURER',
   REGULAR: 'REGULAR',
   COMMITTEE: 'COMMITTEE',
   COORDINATOR: 'COORDINATOR',

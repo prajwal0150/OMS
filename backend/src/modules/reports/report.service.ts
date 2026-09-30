@@ -319,6 +319,7 @@ export class ReportService {
         },
         {
           title: 'Member register',
+          primary: true,
           columns: [
             { key: 'memberId', header: 'Member ID', weight: 1.2 },
             { key: 'name', header: 'Name', weight: 2 },
@@ -370,6 +371,7 @@ export class ReportService {
         },
         {
           title: 'Attendance register',
+          primary: true,
           columns: [
             { key: 'date', header: 'Date', weight: 1 },
             { key: 'event', header: 'Event', weight: 2.2 },
@@ -430,6 +432,7 @@ export class ReportService {
       tables: [
         {
           title: 'Unit overview',
+          primary: true,
           columns: [
             { key: 'unit', header: 'Unit', weight: 2 },
             { key: 'code', header: 'Code', weight: 1 },
@@ -489,6 +492,7 @@ export class ReportService {
       tables: [
         {
           title: 'Community overview',
+          primary: true,
           columns: [
             { key: 'community', header: 'Community', weight: 2 },
             { key: 'code', header: 'Code', weight: 1 },
@@ -543,6 +547,7 @@ export class ReportService {
       tables: [
         {
           title: 'Committee register',
+          primary: true,
           columns: [
             { key: 'name', header: 'Committee', weight: 2.4 },
             { key: 'level', header: 'Level', weight: 1 },
@@ -583,6 +588,7 @@ export class ReportService {
       tables: [
         {
           title: 'Event register',
+          primary: true,
           columns: [
             { key: 'title', header: 'Event', weight: 2.6 },
             { key: 'type', header: 'Type', weight: 1.4 },
@@ -644,6 +650,7 @@ export class ReportService {
         },
         {
           title: 'Content register',
+          primary: true,
           columns: [
             { key: 'title', header: 'Title', weight: 2.6 },
             { key: 'type', header: 'Type', weight: 1.4 },
@@ -685,6 +692,7 @@ export class ReportService {
       tables: [
         {
           title: 'Announcement register',
+          primary: true,
           columns: [
             { key: 'title', header: 'Title', weight: 2.8 },
             { key: 'targetType', header: 'Target', weight: 1.6 },
@@ -723,6 +731,7 @@ export class ReportService {
       tables: [
         {
           title: 'Activities and updates',
+          primary: true,
           columns: [
             { key: 'title', header: 'Activity', weight: 2.6 },
             { key: 'type', header: 'Type', weight: 1.4 },

@@ -41,6 +41,23 @@ export const updateAdministratorSchema = createAdministratorSchema.partial().ext
   email: emailSchema.optional(),
 });
 
+/**
+ * Administrators may only maintain their own contact details.
+ *
+ * `email` is deliberately absent: it is the login identity, and the
+ * authenticated `AuthUser.email` is issued into the access token, so a silent
+ * self-service change would leave the session inconsistent. `role`, `status`
+ * and the organizational scope are administrator-controlled.
+ */
+export const updateOwnAdministratorProfileSchema = z.object({
+  firstName: requiredString(1, 60),
+  middleName: optionalString(60),
+  lastName: requiredString(1, 60),
+  phone: phoneSchema,
+  profilePhoto: optionalString(400),
+  note: optionalString(500),
+});
+
 export const administratorStatusSchema = z.object({
   status: z.enum(
     [ACCOUNT_STATUS.ACTIVE, ACCOUNT_STATUS.INACTIVE, ACCOUNT_STATUS.SUSPENDED, ACCOUNT_STATUS.PENDING],

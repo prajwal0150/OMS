@@ -103,6 +103,51 @@ export const memberController = {
     );
   }),
 
+  /* Registration approvals (district level) */
+  listRegistrationRequests: asyncHandler(async (req, res: Response) => {
+    const { items, meta } = await memberService.listRegistrationRequests(
+      requireUser(req),
+      req.query as Record<string, unknown>,
+    );
+    return ApiResponder.success(res, items, 'Registration requests retrieved', 200, {
+      pagination: meta,
+    });
+  }),
+
+  approveRegistration: asyncHandler(async (req, res: Response) => {
+    const { note } = req.body as { note?: string };
+    const member = await memberService.approveRegistration(
+      requireUser(req),
+      String(req.params.id),
+      note,
+    );
+    await auditLogService.recordFromRequest(
+      req,
+      AUDIT_ACTION.APPROVE,
+      'Member',
+      String(member._id),
+      `Member registration approved for ${String(member.memberId ?? '')}`.trim(),
+    );
+    return ApiResponder.success(res, member, 'Member registration approved');
+  }),
+
+  rejectRegistration: asyncHandler(async (req, res: Response) => {
+    const { reason } = req.body as { reason: string };
+    const member = await memberService.rejectRegistration(
+      requireUser(req),
+      String(req.params.id),
+      reason,
+    );
+    await auditLogService.recordFromRequest(
+      req,
+      AUDIT_ACTION.REJECT,
+      'Member',
+      String(member._id),
+      `Member registration rejected for ${String(member.memberId ?? '')}`.trim(),
+    );
+    return ApiResponder.success(res, member, 'Member registration rejected');
+  }),
+
   /* Member accounts */
   createAccount: asyncHandler(async (req, res: Response) => {
     const result = await memberAccountService.createAccount(

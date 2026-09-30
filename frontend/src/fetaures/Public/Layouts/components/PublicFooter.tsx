@@ -1,102 +1,117 @@
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Mail, MapPin, Phone, Youtube } from 'lucide-react';
-import { ORGANIZATION_NAME, ORGANIZATION_SHORT_NAME, DEFAULT_PROVINCE } from '../../../../constants';
+import { Facebook, Linkedin, Mail, MapPin, Phone, Twitter, Youtube } from 'lucide-react';
+import { usePublicDetail } from '../../hooks/usePublicData';
+import { fetchOrganizationPublic } from '../../services/publicService';
+import {
+  DEFAULT_DISTRICT_NAME,
+  DEFAULT_PROVINCE,
+  ORGANIZATION_SHORT_NAME,
+} from '../../../../constants';
+import { OrganizationLogo } from './OrganizationLogo';
 
-const COLUMNS = [
-  {
-    heading: 'Organization',
-    links: [
-      { label: 'About us', to: '/about' },
-      { label: 'District profile', to: '/district' },
-      { label: 'Our units', to: '/units' },
-      { label: 'Communities', to: '/communities' },
-    ],
-  },
-  {
-    heading: 'What we do',
-    links: [
-      { label: 'Activities', to: '/content' },
-      { label: 'Events', to: '/events' },
-      { label: 'Announcements', to: '/announcements' },
-      { label: 'Photo gallery', to: '/gallery' },
-    ],
-  },
-  {
-    heading: 'Members',
-    links: [
-      { label: 'Member sign in', to: '/login' },
-      { label: 'Change password', to: '/change-password' },
-      { label: 'Contact us', to: '/contact' },
-    ],
-  },
-];
+const SOCIALS = [
+  { key: 'facebook', Icon: Facebook, label: 'Facebook' },
+  { key: 'youtube', Icon: Youtube, label: 'YouTube' },
+  { key: 'twitter', Icon: Twitter, label: 'Twitter' },
+  { key: 'linkedin', Icon: Linkedin, label: 'LinkedIn' },
+] as const;
 
-/** Public footer with the organization identity and quick links. */
+/** Dark public footer: brand, contact details, socials and the legal bar. */
 export function PublicFooter() {
+  const { data: organization } = usePublicDetail(fetchOrganizationPublic);
+
+  const email = organization?.email ?? 'info@heavenlypath.org.np';
+  const phone = organization?.phone ?? '+977-25-xxxxxxx';
+  const socialLinks = organization?.socialLinks;
+
   return (
-    <footer className="mt-8 border-t border-line bg-white">
-      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-xs font-bold text-white">
-              HP
+    <footer className="mt-6 bg-secondary text-slate-300">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-8 gap-y-5 px-4 py-8">
+        <Link to="/" className="flex items-center gap-2.5">
+          <OrganizationLogo className="h-10 w-10" />
+          <span>
+            <span className="block text-sm leading-tight font-bold text-white">
+              {ORGANIZATION_SHORT_NAME}
             </span>
-            <p className="text-sm font-semibold text-secondary">{ORGANIZATION_SHORT_NAME}</p>
-          </div>
-          <p className="mt-2 text-xs leading-relaxed text-muted">
-            {ORGANIZATION_NAME} - serving {DEFAULT_PROVINCE} through our units, communities and
-            committees.
-          </p>
-          <div className="mt-3 flex items-center gap-2">
-            {[
-              { icon: Facebook, label: 'Facebook' },
-              { icon: Instagram, label: 'Instagram' },
-              { icon: Youtube, label: 'YouTube' },
-            ].map(({ icon: Icon, label }) => (
+            <span className="block text-[10px] leading-tight font-semibold tracking-wide text-slate-400">
+              {DEFAULT_DISTRICT_NAME.toUpperCase()} DISTRICT
+            </span>
+          </span>
+        </Link>
+
+        <span className="flex items-start gap-2 text-xs leading-snug text-slate-300">
+          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+          <span>
+            {DEFAULT_DISTRICT_NAME}, {DEFAULT_PROVINCE}
+            <span className="block">Nepal</span>
+          </span>
+        </span>
+
+        <a
+          href={`mailto:${email}`}
+          className="flex items-center gap-2 text-xs text-slate-300 transition-colors hover:text-white"
+        >
+          <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+          {email}
+        </a>
+
+        <a
+          href={`tel:${phone.replace(/[^+\d]/g, '')}`}
+          className="flex items-center gap-2 text-xs text-slate-300 transition-colors hover:text-white"
+        >
+          <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+          {phone}
+        </a>
+
+        <div className="flex items-center gap-2">
+          {SOCIALS.map(({ key, Icon, label: socialLabel }) => {
+            const href = socialLinks?.[key];
+            const inner = (
               <span
-                key={label}
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-line text-slate-400"
-                aria-label={label}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-slate-300 transition-colors group-hover:bg-white/20 group-hover:text-white"
+                aria-label={socialLabel}
               >
                 <Icon className="h-3.5 w-3.5" aria-hidden />
               </span>
-            ))}
-          </div>
+            );
+            return href ? (
+              <a
+                key={key}
+                href={href}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="group"
+                aria-label={socialLabel}
+              >
+                {inner}
+              </a>
+            ) : (
+              <span key={key} className="group" role="presentation">
+                {inner}
+              </span>
+            );
+          })}
         </div>
-
-        {COLUMNS.map((column) => (
-          <div key={column.heading}>
-            <p className="text-sm font-semibold text-secondary">{column.heading}</p>
-            <ul className="mt-2 space-y-1.5">
-              {column.links.map((link) => (
-                <li key={link.to}>
-                  <Link to={link.to} className="text-xs text-muted hover:text-primary hover:underline">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
       </div>
 
-      <div className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs text-muted">
-          <p>&copy; {new Date().getFullYear()} {ORGANIZATION_NAME}. All rights reserved.</p>
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" aria-hidden />
-              {DEFAULT_PROVINCE}, Nepal
+      <div className="border-t border-white/10">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-3.5 text-xs text-slate-400">
+          <p>
+            &copy; {new Date().getFullYear()} Heavenly Path Sunsari District. All rights reserved.
+          </p>
+          <p className="flex items-center gap-2">
+            <span>Privacy Policy</span>
+            <span aria-hidden className="text-slate-600">
+              |
             </span>
-            <span className="flex items-center gap-1">
-              <Phone className="h-3 w-3" aria-hidden />
-              Contact via page
+            <span>Terms of Service</span>
+            <span aria-hidden className="text-slate-600">
+              |
             </span>
-            <span className="flex items-center gap-1">
-              <Mail className="h-3 w-3" aria-hidden />
-              Email us
-            </span>
-          </div>
+            <Link to="/contact" className="transition-colors hover:text-white">
+              Contact
+            </Link>
+          </p>
         </div>
       </div>
     </footer>

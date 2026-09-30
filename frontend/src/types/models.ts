@@ -547,4 +547,15 @@ export interface Member extends Timestamps {
   committeePositions?: MemberCommitteePosition[];
   membershipType: MembershipType;
   status: MemberStatus;
+  /** District review state (only set for unit/community level registrations). */
+  registrationStatus?: RegistrationStatus;
+  registrationRequestedBy?: MaybeRef;
+  registrationRequestedAt?: string;
+  registrationReviewedBy?: MaybeRef;
+  registrationReviewedAt?: string;
+  registrationReviewNote?: string;
+  /** Enriched by the registration request list endpoint. */
+  registrationRequestedByName?: string | null;
 }
+
+export type RegistrationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';

@@ -4,7 +4,8 @@ import { AUDIT_ACTION } from '../constants/enums';
 import type { AuthUser } from '../types/auth';
 import type { CrudListResult, CrudServiceContract } from './crudController';
 import type { BaseRepository } from './BaseRepository';
-import { applyScopeDefaults } from './scope';
+import { applyScopeDefaults, assertWithinScope } from './scope';
+import type { ScopeTarget } from './scope';
 import { ApiError } from '../utils/ApiError';
 import { auditLogService } from '../modules/auditLogs/auditLog.service';
 
@@ -91,6 +92,13 @@ export class ScopedCrudService<TDocument extends mongoose.Document>
     const prepared = this.options.prepareCreate
       ? await this.options.prepareCreate(user, payload)
       : payload;
+    // An explicit scope outside the caller's own scope is always rejected.
+    // Missing scope fields are still filled in from the caller below.
+    assertWithinScope(
+      user,
+      prepared as unknown as ScopeTarget,
+      this.options.entityLabel,
+    );
     const withScope =
       this.options.applyScope === false ? prepared : applyScopeDefaults(user, prepared);
     const created = await this.options.repository.create({
@@ -113,6 +121,16 @@ export class ScopedCrudService<TDocument extends mongoose.Document>
     const prepared = this.options.prepareUpdate
       ? await this.options.prepareUpdate(user, existing, payload)
       : payload;
+    // A record may not be moved outside the caller's scope (e.g. by sending a
+    // foreign district id in the update payload).
+    assertWithinScope(
+      user,
+      {
+        ...(existing as unknown as ScopeTarget),
+        ...(prepared as unknown as ScopeTarget),
+      },
+      this.options.entityLabel,
+    );
     const updated = await this.options.repository.updateById(id, {
       ...prepared,
       updatedBy: user.id,

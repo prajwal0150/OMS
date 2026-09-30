@@ -1,6 +1,7 @@
 import { useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { FileUp, Paperclip, X } from 'lucide-react';
 import { Button } from './Button';
+import { resolveAssetUrl } from '../../services/api/httpClient';
 
 export interface UploadedFilePreview {
   name: string;
@@ -122,7 +123,7 @@ export function FileUploader({
               >
                 {preview?.url ? (
                   <img
-                    src={preview.url}
+                    src={resolveAssetUrl(preview.url)}
                     alt=""
                     className="h-8 w-8 shrink-0 rounded-lg border border-line object-cover"
                   />
@@ -183,7 +184,7 @@ export function ImageGallery({ images, columns = 3, children }: ImageGalleryProp
         {images.map((image, index) => (
           <figure key={`${image.url}-${index}`} className="overflow-hidden rounded-lg border border-line">
             <img
-              src={image.url}
+              src={resolveAssetUrl(image.url)}
               alt={image.alt ?? image.caption ?? ''}
               loading="lazy"
               className="h-32 w-full object-cover"

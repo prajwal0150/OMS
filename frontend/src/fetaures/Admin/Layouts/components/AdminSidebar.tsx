@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { LogOut, X } from 'lucide-react';
 import { useAuthState } from '../../../Auth/hooks/useAuth';
-import { visibleNavSections } from '../config/navigation';
+import { visibleSections } from '../config/navigation';
+import { sectionsForRole } from '../config/panelNavigation';
 import { Button } from '../../../../components/ui';
 
 export interface SidebarProps {
@@ -14,7 +15,7 @@ export interface SidebarProps {
 export function AdminSidebar({ open, onClose }: SidebarProps) {
   const { permissions, role, logout } = useAuthState();
   const location = useLocation();
-  const sections = visibleNavSections({ permissions, role });
+  const sections = visibleSections(sectionsForRole(role), { permissions, role });
 
   // Close the mobile drawer whenever the route changes.
   useEffect(() => {
@@ -34,12 +35,12 @@ export function AdminSidebar({ open, onClose }: SidebarProps) {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-line bg-white transition-transform lg:static lg:z-auto lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-60 shrink-0 flex-col overflow-hidden border-r border-line bg-white transition-transform lg:static lg:z-auto lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-label="Main navigation"
       >
-        <div className="flex h-12 items-center justify-between border-b border-line px-3">
+        <div className="flex h-12 shrink-0 items-center justify-between border-b border-line px-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-secondary">HEAVENLY PATH</p>
             <p className="truncate text-xs text-muted">Sunsari District</p>
@@ -49,7 +50,12 @@ export function AdminSidebar({ open, onClose }: SidebarProps) {
           </Button>
         </div>
 
-        <nav className="flex-1 space-y-3 overflow-y-auto p-2">
+        {/*
+          min-h-0 is what lets this nav actually scroll instead of stretching
+          the <aside>: a flex child defaults to min-height:auto, so it refuses to
+          shrink below its content and the sidebar would grow with the menu.
+        */}
+        <nav className="min-h-0 flex-1 space-y-3 overflow-y-auto overflow-x-hidden p-2">
           {sections.map((section, sectionIndex) => (
             <div key={section.heading ?? `section-${sectionIndex}`}>
               {section.heading && (
@@ -85,7 +91,7 @@ export function AdminSidebar({ open, onClose }: SidebarProps) {
           ))}
         </nav>
 
-        <div className="border-t border-line p-2">
+        <div className="shrink-0 border-t border-line p-2">
           <button
             type="button"
             onClick={() => void logout()}

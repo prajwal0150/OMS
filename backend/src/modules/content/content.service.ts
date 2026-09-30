@@ -4,13 +4,15 @@ import {
   VISIBILITY,
 } from '../../constants/enums';
 import { ApiError } from '../../utils/ApiError';
-import { slugify, sanitizeRichText, stripHtml, truncate } from '../../utils/strings';
+import { refId, slugify, sanitizeRichText, stripHtml, truncate } from '../../utils/strings';
 import { ScopedCrudService } from '../../shared/ScopedCrudService';
+import { assertParentsInDistrict } from '../../shared/parentScope';
 import { buildDateRange, combineFilters, readEnum } from '../../shared/queryFilters';
 import type { AuthUser } from '../../types/auth';
 import { contentRepository } from './content.repository';
 import type { ContentDocument } from './content.model';
 import { memberRepository } from '../members/member.repository';
+import { documentRepository } from '../documents/document.repository';
 
 export class ContentService extends ScopedCrudService<ContentDocument> {
   constructor() {
@@ -46,6 +48,8 @@ export class ContentService extends ScopedCrudService<ContentDocument> {
         const title = String(payload.title ?? '').trim();
         if (title.length < 3) throw ApiError.badRequest('A content title is required');
 
+        await this.assertAttachments(user, districtId, payload);
+
         const html = sanitizeRichText(String(payload.content ?? ''));
         return {
           ...payload,
@@ -61,7 +65,7 @@ export class ContentService extends ScopedCrudService<ContentDocument> {
           videos: payload.videos ?? [],
         };
       },
-      prepareUpdate: async (_user, existing, payload) => {
+      prepareUpdate: async (user, existing, payload) => {
         const next: Record<string, unknown> = { ...payload };
         if (typeof payload.title === 'string' && payload.title.trim() !== existing.title) {
           next.slug = await this.uniqueSlug(payload.title.trim(), String(existing._id));
@@ -71,11 +75,43 @@ export class ContentService extends ScopedCrudService<ContentDocument> {
           if (!payload.summary) next.summary = truncate(stripHtml(next.content as string), 300);
         }
         if (payload.gallery !== undefined) next.gallery = this.normalizeGallery(payload.gallery);
+        if (payload.documents !== undefined) {
+          await this.assertAttachments(
+            user,
+            refId(payload.district ?? existing.district) ?? String(user.district ?? ''),
+            payload,
+          );
+        }
         // Status transitions are only possible through the publishing workflow.
         delete next.status;
         return next;
       },
     });
+  }
+
+  /**
+   * A post may only hang off parents of its own district, and the documents it
+   * attaches have to be inside the caller's scope as well.
+   */
+  private async assertAttachments(
+    user: AuthUser,
+    districtId: string,
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    await assertParentsInDistrict(districtId, {
+      unit: payload.unit ? String(payload.unit) : undefined,
+      community: payload.community ? String(payload.community) : undefined,
+      committee: payload.committee ? String(payload.committee) : undefined,
+    });
+
+    const documentIds = Array.isArray(payload.documents)
+      ? (payload.documents as unknown[]).map(String)
+      : payload.documents
+        ? [String(payload.documents)]
+        : [];
+    for (const documentId of documentIds) {
+      await documentRepository.findByIdScoped(documentId, user, 'Document');
+    }
   }
 
   private normalizeGallery(value: unknown) {

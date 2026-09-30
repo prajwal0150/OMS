@@ -1,32 +1,24 @@
-# React + TypeScript + Vite
+# HEAVENLY PATH SUNSARI DISTRICT — Web client
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19 + TypeScript + Redux Toolkit + Tailwind SPA that consumes the
+Express/MongoDB API in `../backend`. The repository root `README.md` documents
+setup, credentials, scripts and the architecture.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev      # http://localhost:5173 (proxies /api and /uploads to :5000)
+npm run build    # tsc -b && vite build
+npm run lint     # oxlint
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+| Path | Purpose |
+| --- | --- |
+| `src/fetaures/**` | Feature modules (Public site, Auth, Member portal, Admin) |
+| `src/services/api` | Axios client, single-flight token refresh, error normalisation |
+| `src/store` | Redux store and typed hooks |
+| `src/routes` | Route table with role/permission guards |
+| `src/components` | Shared UI kit (buttons, tables, modals, states) |
+| `src/types` | API envelope, models and enum mirrors of the backend |
+
+There is no public registration anywhere: accounts are provisioned by the
+Super Admin (administrators) or by administrators (members).

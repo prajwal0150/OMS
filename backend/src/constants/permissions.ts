@@ -23,6 +23,7 @@ export const PERMISSIONS = {
   MEMBER_VIEW: 'member.view',
   MEMBER_UPDATE: 'member.update',
   MEMBER_DELETE: 'member.delete',
+  MEMBER_REGISTER_APPROVE: 'member.register.approve',
 
   MEMBER_ACCOUNT_CREATE: 'member.account.create',
   MEMBER_ACCOUNT_VIEW: 'member.account.view',
@@ -75,6 +76,7 @@ export const PERMISSIONS = {
   ADMIN_ACCOUNT_ACTIVATE: 'admin.account.activate',
   ADMIN_ACCOUNT_DEACTIVATE: 'admin.account.deactivate',
   ADMIN_ACCOUNT_SUSPEND: 'admin.account.suspend',
+  ADMIN_ACCOUNT_DELETE: 'admin.account.delete',
   ADMIN_ACCOUNT_RESET_PASSWORD: 'admin.account.resetPassword',
   ADMIN_ACCOUNT_ASSIGN_SCOPE: 'admin.account.assignScope',
 

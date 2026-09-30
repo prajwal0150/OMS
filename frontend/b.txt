@@ -1,0 +1,4 @@
+﻿
+> hps-oms-frontend@1.0.0 build
+> tsc -b && vite build
+

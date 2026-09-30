@@ -9,7 +9,10 @@ const POPULATE = [
   { path: 'community', select: 'name code targetGroup' },
   { path: 'committee', select: 'name level' },
   { path: 'event', select: 'title startDate type' },
-  { path: 'author', select: 'firstName lastName email' },
+  // The feed renders the attached files, so their metadata has to arrive with
+  // the post instead of forcing a second request per card.
+  { path: 'documents', select: 'title description category file date' },
+  { path: 'author', select: 'firstName lastName email photo role' },
   { path: 'publishedBy', select: 'firstName lastName' },
 ];
 

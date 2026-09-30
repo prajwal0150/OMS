@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { AlertCircle, KeyRound, Lock, ShieldCheck } from 'lucide-react';
 import { Button, Input, Card } from '../../../../components/ui';
 import { useAuthState } from '../../hooks/useAuth';
@@ -28,13 +29,22 @@ const schema = z
 
 type FormValues = z.infer<typeof schema>;
 
+export interface ChangePasswordPageProps {
+  /**
+   * True inside the blocking first sign-in prompt (member accounts). Optional
+   * visits — reached from the profile menu — omit it and get relaxed copy.
+   */
+  forced?: boolean;
+}
+
 /**
- * Forced password change. Reached after the first sign-in of a newly created
- * Super Admin, administrator or member account.
+ * Password change form. Administrators and members can open it any time from
+ * their profile; member accounts are additionally prompted on first sign-in.
  */
-export function ChangePasswordPage() {
+export function ChangePasswordPage({ forced = false }: ChangePasswordPageProps) {
   const { changePassword, user } = useAuthState();
   const navigate = useNavigate();
+  const location = useLocation();
   const [status, setStatus] = useState<'idle' | 'saving' | 'error'>('idle');
   const [message, setMessage] = useState<string | null>(null);
 
@@ -52,7 +62,10 @@ export function ChangePasswordPage() {
     setMessage(null);
     const ok = await changePassword(values);
     if (ok) {
-      navigate(user?.role === 'MEMBER' ? '/portal' : '/admin', { replace: true });
+      toast.success('Password changed successfully');
+      const home = user?.role === 'MEMBER' ? '/portal' : '/admin';
+      const from = (location.state as { from?: string } | null)?.from;
+      navigate(forced || !from ? home : from, { replace: true });
       return;
     }
     setStatus('error');
@@ -66,8 +79,14 @@ export function ChangePasswordPage() {
           <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-white">
             <ShieldCheck className="h-5 w-5" aria-hidden />
           </div>
-          <h1 className="mt-3 text-lg font-semibold text-secondary">{ORGANIZATION_NAME}</h1>
-          <p className="text-sm text-muted">Set a new password to secure your account</p>
+          <h1 className="mt-3 text-lg font-semibold text-secondary">
+            {forced ? ORGANIZATION_NAME : 'Change your password'}
+          </h1>
+          <p className="text-sm text-muted">
+            {forced
+              ? 'Set a new password to secure your account'
+              : 'Update your password whenever you want — it only takes a moment.'}
+          </p>
         </div>
 
         <Card>
@@ -82,9 +101,11 @@ export function ChangePasswordPage() {
               </div>
             )}
 
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              You must change your password before you can continue using the platform.
-            </div>
+            {forced && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                You must change your password before you can continue using the platform.
+              </div>
+            )}
 
             <Input
               label="Current password"
@@ -115,7 +136,7 @@ export function ChangePasswordPage() {
             />
 
             <Button type="submit" className="w-full" loading={status === 'saving'}>
-              Save password &amp; continue
+              {forced ? 'Save password & continue' : 'Update password'}
             </Button>
           </form>
         </Card>

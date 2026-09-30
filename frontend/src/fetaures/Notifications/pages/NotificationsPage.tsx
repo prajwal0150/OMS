@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, CheckCheck, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -38,6 +39,7 @@ export function NotificationsPage() {
   const error = useAppSelector(selectNotificationsError);
   const unread = useAppSelector(selectUnreadCount);
   const [page, setPage] = useState(1);
+  const navigate = useNavigate();
 
   useEffect(() => {
     void dispatch(loadNotifications({ page, limit: 15 }));
@@ -121,6 +123,18 @@ export function NotificationsPage() {
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
+                  {notification.link && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        void dispatch(markRead(notification._id));
+                        navigate(notification.link as string);
+                      }}
+                    >
+                      Open
+                    </Button>
+                  )}
                   {!notification.isRead && (
                     <Button
                       size="sm"

@@ -1,0 +1,24 @@
+{
+  "name": "hps-oms",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HEAVENLY PATH SUNSARI DISTRICT - Organization Management Platform (API + web client)",
+  "scripts": {
+    "setup": "npm --prefix backend install && npm --prefix frontend install",
+    "dev:api": "npm --prefix backend run dev",
+    "dev:web": "npm --prefix frontend run dev",
+    "build": "npm run build:api && npm run build:web",
+    "build:api": "npm --prefix backend run build",
+    "build:web": "npm --prefix frontend run build",
+    "start": "npm --prefix backend run start",
+    "preview": "npm --prefix frontend run preview",
+    "seed": "npm --prefix backend run seed",
+    "test": "npm --prefix backend test",
+    "smoke": "npm --prefix backend run smoke",
+    "typecheck": "npm --prefix backend run typecheck && npm --prefix frontend run typecheck",
+    "lint": "npm --prefix frontend run lint"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

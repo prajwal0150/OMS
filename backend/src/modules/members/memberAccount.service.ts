@@ -1,6 +1,11 @@
 ﻿import { refId } from '../../utils/strings';
 import type { Request } from 'express';
-import { ACCOUNT_STATUS, AUDIT_ACTION, MEMBER_STATUS } from '../../constants/enums';
+import {
+  ACCOUNT_STATUS,
+  AUDIT_ACTION,
+  MEMBER_STATUS,
+  REGISTRATION_STATUS,
+} from '../../constants/enums';
 import { ROLE_NAMES } from '../../constants/roles';
 import type { AccountStatus } from '../../constants/enums';
 import { ApiError } from '../../utils/ApiError';
@@ -59,6 +64,9 @@ export class MemberAccountService {
       throw ApiError.forbidden('Only administrators may assign a non member role');
     }
 
+    // Registrations awaiting district approval get a blocked (PENDING) login
+    // that only becomes usable once the district admin approves the member.
+    const awaitingApproval = member.registrationStatus === REGISTRATION_STATUS.PENDING;
     const temporaryPassword = input.password ?? generateTemporaryPassword();
     const account = await userRepository.create({
       firstName: member.firstName,
@@ -72,13 +80,13 @@ export class MemberAccountService {
       member: member._id,
       district: member.district,
       unit: member.unit,
-      status: ACCOUNT_STATUS.ACTIVE,
+      status: awaitingApproval ? ACCOUNT_STATUS.PENDING : ACCOUNT_STATUS.ACTIVE,
       forcePasswordChange: true,
       createdBy: user.id,
       updatedBy: user.id,
     });
 
-    if (member.status === MEMBER_STATUS.PENDING) {
+    if (!awaitingApproval && member.status === MEMBER_STATUS.PENDING) {
       await memberRepository.updateById(String(member._id), { status: MEMBER_STATUS.ACTIVE });
     }
 

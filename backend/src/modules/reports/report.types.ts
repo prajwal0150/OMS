@@ -13,6 +13,12 @@ export interface ReportSummaryItem {
 
 export interface ReportTable {
   title?: string;
+  /**
+   * The table that represents the primary data set of the report (the detailed
+   * register). Flat exports such as CSV use it, while PDF and Excel render
+   * every table.
+   */
+  primary?: boolean;
   columns: Array<{ key: string; header: string; weight?: number; align?: 'left' | 'right' | 'center' }>;
   rows: Array<Record<string, string | number>>;
 }

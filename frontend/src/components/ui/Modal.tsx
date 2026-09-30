@@ -25,11 +25,24 @@ export interface ModalProps {
 /** Compact, accessible dialog: `rounded-lg max-w-* p-4`, focus-trapped and ESC-dismissable. */
 export function Modal({ open, onClose, title, description, children, footer, size = 'md' }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  /*
+   * Callers pass an inline arrow (`onClose={() => setOpen(false)}`), so its
+   * identity changes on every render. Holding it in a ref keeps the open/close
+   * effect below keyed to `open` alone - otherwise every keystroke inside the
+   * dialog re-ran the effect and re-focused the panel, stealing the caret away
+   * from whichever field was being typed into.
+   */
+  const onCloseRef = useRef(onClose);
+
+  // Kept in a ref so the open/close effect below can depend on `open` alone.
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return undefined;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') onCloseRef.current();
     };
     document.addEventListener('keydown', onKeyDown);
     const previousOverflow = document.body.style.overflow;
@@ -39,7 +52,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
       document.removeEventListener('keydown', onKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

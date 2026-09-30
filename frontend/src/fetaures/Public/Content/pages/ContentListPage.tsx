@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { FileText } from 'lucide-react';
 import { Badge } from '../../../../components/ui';
@@ -20,8 +20,17 @@ const TYPE_OPTIONS = Object.values(CONTENT_TYPE).map((value) => ({
 }));
 
 export function ContentListPage() {
-  const [page, setPage] = useState(1);
-  const list = usePublicList(fetchContentPublic, { page, limit: 9 });
+  // Deep link support: the global header search lands on /content?search=...
+  const [params] = useSearchParams();
+  const urlSearch = params.get('search') ?? '';
+
+  const list = usePublicList(fetchContentPublic, { limit: 9, search: urlSearch });
+  const { setSearch } = list;
+
+  useEffect(() => {
+    setSearch(urlSearch);
+  }, [urlSearch, setSearch]);
+
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
@@ -78,7 +87,7 @@ export function ContentListPage() {
         </div>
       </PublicState>
 
-      <PublicPagination meta={list.pagination} onPageChange={setPage} itemLabel="articles" />
+      <PublicPagination meta={list.pagination} onPageChange={list.setPage} itemLabel="articles" />
     </div>
   );
 }

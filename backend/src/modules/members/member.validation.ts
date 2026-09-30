@@ -78,4 +78,16 @@ export const accountStatusSchema = z.object({
   status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING']),
 });
 
+/* ---------- District review of unit level registrations ---------- */
+
+export const registrationListQuerySchema = paginationSchema;
+
+export const approveRegistrationSchema = z.object({
+  note: optionalString(500),
+});
+
+export const rejectRegistrationSchema = z.object({
+  reason: requiredString(3, 500),
+});
+
 export const memberIdParamsSchema = z.object({ id: objectIdSchema });

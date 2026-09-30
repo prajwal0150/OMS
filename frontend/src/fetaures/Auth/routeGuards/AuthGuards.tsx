@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { useAppSelector } from '../../../store/hooks';
 import { useAuthState } from '../hooks/useAuth';
+import { selectIsAdministrator } from '../redux/authSelector';
 import { Spinner, ErrorState } from '../../../components/ui';
 
 /**
@@ -19,6 +21,13 @@ export interface ProtectedRouteProps {
   /** Sends members to the member portal and administrators to /admin. */
   memberAllowed?: boolean;
   adminAllowed?: boolean;
+  /**
+   * Member portal only. Administrators are redirected to `/admin`, because the
+   * portal is built on the Member record while an administrator session owns an
+   * account. `isAdministrator` is used rather than the role, so committee member
+   * and coordinator accounts (which are not administrators) keep portal access.
+   */
+  membersOnly?: boolean;
 }
 
 function FullPageLoader() {
@@ -39,12 +48,17 @@ export function ProtectedRoute({
   roles,
   memberAllowed = false,
   adminAllowed = true,
+  membersOnly = false,
 }: ProtectedRouteProps) {
   const { isAuthenticated, loading, permissions: granted, role } = useAuthState();
+  const isAdministrator = useAppSelector(selectIsAdministrator);
   const location = useLocation();
 
   if (loading) return <FullPageLoader />;
   if (!isAuthenticated) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+
+  // An admin panel session must never fall through to the member portal.
+  if (membersOnly && isAdministrator) return <Navigate to="/admin" replace />;
 
   if (!memberAllowed && role === 'MEMBER') return <Navigate to="/portal" replace />;
   if (!adminAllowed && role !== 'MEMBER' && role !== 'SUPER_ADMIN') return <Navigate to="/admin" replace />;

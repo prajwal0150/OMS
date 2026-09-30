@@ -65,6 +65,27 @@ export const administratorController = {
     return ApiResponder.success(res, result, 'Password reset — share the temporary password securely');
   }),
 
+  remove: asyncHandler(async (req: Request, res: Response) => {
+    await administratorService.remove(requireUser(req), String(req.params.id), req);
+    return ApiResponder.success(res, null, 'Administrator account deleted successfully');
+  }),
+
+  /* ---------- Own account (self service) ---------- */
+
+  ownProfile: asyncHandler(async (req: Request, res: Response) => {
+    const profile = await administratorService.getOwnProfile(requireUser(req));
+    return ApiResponder.success(res, profile, 'Profile retrieved');
+  }),
+
+  updateOwnProfile: asyncHandler(async (req: Request, res: Response) => {
+    const profile = await administratorService.updateOwnProfile(
+      requireUser(req),
+      req.body as Record<string, never>,
+      req,
+    );
+    return ApiResponder.success(res, profile, 'Profile updated successfully');
+  }),
+
   /* ---------- Roles & permissions ---------- */
 
   listRoles: asyncHandler(async (req: Request, res: Response) => {

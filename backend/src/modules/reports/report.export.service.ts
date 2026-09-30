@@ -96,7 +96,9 @@ export class ReportExportService {
   }
 
   private async toCsv(payload: ReportPayload): Promise<RenderedExport> {
-    const primary = payload.tables[0];
+    // Flat exports always contain the detailed register, never a breakdown table.
+    const primary =
+      payload.tables.find((table) => table.primary) ?? payload.tables[0];
     const csv = primary
       ? buildCsv(
           primary.columns.map((column) => ({ key: column.key, header: column.header })),

@@ -1,13 +1,44 @@
 import { NOTIFICATION_TYPE, RECORD_STATUS, TARGET_TYPE } from '../../constants/enums';
 import { ApiError } from '../../utils/ApiError';
-import { sanitizeRichText, stripHtml, truncate } from '../../utils/strings';
+import { sanitizeRichText, stripHtml, truncate, refId } from '../../utils/strings';
 import { ScopedCrudService } from '../../shared/ScopedCrudService';
+import { assertParentsInDistrict } from '../../shared/parentScope';
 import { buildDateRange, combineFilters, readEnum } from '../../shared/queryFilters';
 import type { AuthUser } from '../../types/auth';
 import { announcementRepository } from './announcement.repository';
 import type { AnnouncementDocument } from './announcement.model';
 import { memberRepository } from '../members/member.repository';
 import { notificationService } from '../notifications/notification.service';
+
+interface AudienceRefs {
+  unit?: string;
+  community?: string;
+  committee?: string;
+}
+
+/**
+ * Validates the audience a notice is addressed to. Runs on create *and* update
+ * so an edit can never leave a unit notice without a unit.
+ */
+const resolveAudience = async (
+  districtId: string | undefined,
+  targetType: string,
+  refs: AudienceRefs,
+): Promise<void> => {
+  if (targetType === TARGET_TYPE.DISTRICT && !districtId) {
+    throw ApiError.badRequest('A district is required for a district announcement');
+  }
+  if (targetType === TARGET_TYPE.UNIT && !refs.unit) {
+    throw ApiError.badRequest('A unit is required for a unit announcement');
+  }
+  if (targetType === TARGET_TYPE.COMMUNITY && !refs.community) {
+    throw ApiError.badRequest('A community is required for a community announcement');
+  }
+  if (targetType === TARGET_TYPE.COMMITTEE && !refs.committee) {
+    throw ApiError.badRequest('A committee is required for a committee announcement');
+  }
+  await assertParentsInDistrict(districtId, refs);
+};
 
 export class AnnouncementService extends ScopedCrudService<AnnouncementDocument> {
   constructor() {
@@ -34,19 +65,12 @@ export class AnnouncementService extends ScopedCrudService<AnnouncementDocument>
         ) as Record<string, unknown>,
       prepareCreate: async (user, payload) => {
         const targetType = String(payload.targetType ?? TARGET_TYPE.DISTRICT);
-        const districtId = payload.district ?? user.district;
-        if (targetType === TARGET_TYPE.DISTRICT && !districtId) {
-          throw ApiError.badRequest('A district is required for a district announcement');
-        }
-        if (targetType === TARGET_TYPE.UNIT && !payload.unit) {
-          throw ApiError.badRequest('A unit is required for a unit announcement');
-        }
-        if (targetType === TARGET_TYPE.COMMUNITY && !payload.community) {
-          throw ApiError.badRequest('A community is required for a community announcement');
-        }
-        if (targetType === TARGET_TYPE.COMMITTEE && !payload.committee) {
-          throw ApiError.badRequest('A committee is required for a committee announcement');
-        }
+        const districtId = refId(payload.district) ?? user.district ?? undefined;
+        await resolveAudience(districtId, targetType, {
+          unit: payload.unit ? String(payload.unit) : undefined,
+          community: payload.community ? String(payload.community) : undefined,
+          committee: payload.committee ? String(payload.committee) : undefined,
+        });
 
         const selectedMembers = Array.isArray(payload.selectedMembers)
           ? (payload.selectedMembers as unknown[]).map(String)
@@ -66,12 +90,32 @@ export class AnnouncementService extends ScopedCrudService<AnnouncementDocument>
           createdBy: user.id,
         };
       },
-      prepareUpdate: async (_user, _existing, payload) => ({
-        ...payload,
-        ...(typeof payload.content === 'string'
-          ? { content: sanitizeRichText(payload.content) }
-          : {}),
-      }),
+      prepareUpdate: async (user, existing, payload) => {
+        // `existing` arrives populated, so every ref is unwrapped with refId().
+        const targetType = String(payload.targetType ?? existing.targetType);
+        const districtId = refId(payload.district ?? existing.district) ?? user.district ?? undefined;
+        await resolveAudience(districtId, targetType, {
+          unit: payload.unit !== undefined ? String(payload.unit) : refId(existing.unit),
+          community:
+            payload.community !== undefined ? String(payload.community) : refId(existing.community),
+          committee:
+            payload.committee !== undefined
+              ? String(payload.committee)
+              : refId(existing.committee),
+        });
+
+        return {
+          ...payload,
+          targetType,
+          ...(typeof payload.content === 'string'
+            ? { content: sanitizeRichText(payload.content) }
+            : {}),
+          // A district wide notice carries no parent, whatever it used to target.
+          ...(targetType === TARGET_TYPE.DISTRICT
+            ? { unit: null, community: null, committee: null, selectedMembers: [] }
+            : {}),
+        };
+      },
     });
   }
 

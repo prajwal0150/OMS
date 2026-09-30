@@ -34,7 +34,8 @@ export interface CommitteeDocument extends mongoose.Document {
 const positionSchema = new mongoose.Schema<CommitteePositionEntry>(
   {
     position: { type: String, enum: Object.values(COMMITTEE_POSITION), required: true },
-    member: { type: mongoose.Schema.Types.ObjectId, ref: 'Member', index: true },
+    // Indexed through the compound index declared on the committee schema below.
+    member: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     assignedDate: { type: Date, default: Date.now },
     endDate: { type: Date },

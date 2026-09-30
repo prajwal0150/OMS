@@ -1,0 +1,87 @@
+# Render Blueprint for the HPS OMS API.
+#
+# Create the blueprint from the repository root ("New > Blueprint") and point it
+# at this file. Render reads it and provisions the web service below.
+#
+# SECRETS ARE NOT IN THIS FILE.
+#   MONGODB_URI, JWT_ACCESS_SECRET and JWT_REFRESH_SECRET are declared with
+#   `sync: false`, so Render prompts for them and stores them as secret values.
+#   Never commit real credentials.
+
+databases:
+  # Drop this block if you use MongoDB Atlas (recommended - a Render free
+  # Postgres-style database is not what this app needs; the API speaks
+  # MONGODB_URI). Leave it commented out to avoid creating a stray instance.
+  #
+  # - name: hps-oms-mongo
+  #   plan: starter
+  #   ipAllowList: []      # only Render's internal network / your IP
+  #   disk:               # persistent storage for uploads
+  #     name: uploads
+  #     mountPath: /opt/render/project/src/backend/uploads
+  #     sizeGB: 1
+
+services:
+  - type: web
+    name: hps-oms-api
+    runtime: node
+    plan: starter # the free plan sleeps after inactivity and is not production
+    rootDir: backend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    # Free instances spin down after 15 minutes idle; Render pings the health
+    # check path to wake them, which avoids cold starts on the first request.
+    autoDeploy: true
+    envVars:
+      # ---- runtime ----
+      - key: NODE_ENV
+        value: production
+      # Render injects PORT; leaving it unset makes the service bind 5000.
+      - key: API_PREFIX
+        value: /api
+
+      # ---- database (secret) ----
+      - key: MONGODB_URI
+        sync: false
+
+      # ---- auth (secret) ----
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 30m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: BCRYPT_SALT_ROUNDS
+        value: 10
+
+      # ---- client (set this to your Netlify origin) ----
+      # Comma separate for preview deploys:
+      # https://hps-oms.netlify.app,https://deploy-preview--123--hps-oms.netlify.app
+      - key: CLIENT_URL
+        sync: false
+
+      # ---- storage ----
+      # UPLOAD_DIR points at the Render disk mount (see the commented block
+      # above). Without a disk, uploads live on the container filesystem and are
+      # WIPED on every deploy and restart.
+      - key: STORAGE_PROVIDER
+        value: local
+      - key: UPLOAD_DIR
+        value: uploads
+      - key: MAX_IMAGE_SIZE_MB
+        value: 5
+      - key: MAX_VIDEO_SIZE_MB
+        value: 100
+      - key: MAX_DOCUMENT_SIZE_MB
+        value: 25
+
+      # ---- first Super Admin (created once, by `npm run seed`) ----
+      - key: SUPER_ADMIN_EMAIL
+        sync: false
+      - key: SUPER_ADMIN_PASSWORD
+        sync: false
+      - key: SEED_DEMO_DATA
+        value: "false"

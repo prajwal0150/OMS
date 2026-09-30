@@ -33,7 +33,14 @@ const LINKS = [
   { label: 'Documents', to: '/portal/documents', icon: FolderOpen },
 ];
 
-/** Compact member portal shell: sidebar + sticky header + scrollable content. */
+/**
+ * Compact member portal shell: sidebar + header + scrollable content.
+ *
+ * Mirrors the admin shell: the viewport box is pinned and only `<main>`
+ * scrolls, so the sidebar never moves. `min-h-0` is required on the scrolling
+ * column - a flex child keeps `min-height: auto` otherwise and would push the
+ * whole document into scrolling instead.
+ */
 export function MemberLayout() {
   const [open, setOpen] = useState(false);
   const { displayName, initials, logout } = useAuthState();
@@ -68,13 +75,13 @@ export function MemberLayout() {
   );
 
   return (
-    <div className="flex min-h-screen bg-app-bg">
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-line bg-white lg:flex">
-        <div className="border-b border-line p-3">
+    <div className="flex h-screen overflow-hidden bg-app-bg">
+      <aside className="hidden w-56 shrink-0 flex-col overflow-hidden border-r border-line bg-white lg:flex">
+        <div className="shrink-0 border-b border-line p-3">
           <Brand />
         </div>
-        <div className="flex-1 overflow-y-auto p-2">{navigation}</div>
-        <div className="border-t border-line p-2">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-2">{navigation}</div>
+        <div className="shrink-0 border-t border-line p-2">
           <SignOutButton onSignOut={logout} />
         </div>
       </aside>
@@ -119,13 +126,13 @@ export function MemberLayout() {
         </header>
 
         {open && (
-          <div className="border-b border-line bg-white p-2 lg:hidden">
+          <div className="shrink-0 border-b border-line bg-white p-2 lg:hidden">
             {navigation}
             <SignOutButton onSignOut={logout} />
           </div>
         )}
 
-        <main className="flex-1 p-3 lg:p-4">
+        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-3 lg:p-4">
           <Outlet />
         </main>
       </div>

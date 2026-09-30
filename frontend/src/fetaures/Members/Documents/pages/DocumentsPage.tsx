@@ -9,8 +9,7 @@ import {
   Pagination,
   Skeleton,
 } from '../../../../components/ui';
-import { formatBytes } from '../../../Admin/Documents/services/documentService';
-import { registerDownload } from '../../../Admin/Documents/services/documentService';
+import { formatBytes, registerDownload } from '../../../../services/api/documentService';
 import { MemberToolbar } from '../../components/MemberToolbar';
 import { usePortalList } from '../../hooks/usePortalData';
 import { fetchMyDocuments } from '../../services/memberPortalService';

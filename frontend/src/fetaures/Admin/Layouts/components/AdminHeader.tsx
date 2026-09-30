@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Bell, ChevronDown, LogOut, Menu, User } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Bell, ChevronDown, KeyRound, LogOut, Menu, User } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { useAuthState } from '../../../Auth/hooks/useAuth';
 import { loadUnreadCount } from '../../../Notifications/redux/notificationThunk';
 import { selectUnreadCount } from '../../../Notifications/redux/notificationSelector';
-import { loadDashboard } from '../../Dashboard/redux/dashboardThunk';
+import { loadPanelDashboard } from '../config/panelDashboard';
 import { ROLE_LABEL } from '../../../../types';
 import { Button } from '../../../../components/ui';
 import GlobalSearch from './GlobalSearch';
@@ -19,6 +19,7 @@ export interface AdminHeaderProps {
 export function AdminHeader({ onToggleSidebar, title }: AdminHeaderProps) {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { displayName, initials, role, logout, isSuperAdmin } = useAuthState();
   const unread = useAppSelector(selectUnreadCount);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -26,8 +27,11 @@ export function AdminHeader({ onToggleSidebar, title }: AdminHeaderProps) {
 
   useEffect(() => {
     void dispatch(loadUnreadCount());
-    void dispatch(loadDashboard(undefined));
-  }, [dispatch]);
+    // The dashboard feature is duplicated per panel, so load the copy that
+    // belongs to this role rather than one shared implementation.
+    const action = loadPanelDashboard(role);
+    if (action) void dispatch(action);
+  }, [dispatch, role]);
 
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
@@ -107,7 +111,10 @@ export function AdminHeader({ onToggleSidebar, title }: AdminHeaderProps) {
                 role="menuitem"
                 onClick={() => {
                   setMenuOpen(false);
-                  navigate('/portal/profile');
+                  // Administrators have their own profile; the member portal
+                  // profile is a different account model and is not reachable
+                  // from an admin session.
+                  navigate('/admin/profile');
                 }}
                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
               >
@@ -115,13 +122,25 @@ export function AdminHeader({ onToggleSidebar, title }: AdminHeaderProps) {
                 My profile
               </button>
               <Link
-                to="/admin/settings"
+                to="/change-password"
+                state={{ from: location.pathname }}
                 role="menuitem"
                 onClick={() => setMenuOpen(false)}
                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
               >
-                Settings
+                <KeyRound className="h-3.5 w-3.5" aria-hidden />
+                Change password
               </Link>
+              {isSuperAdmin && (
+                <Link
+                  to="/admin/settings"
+                  role="menuitem"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                >
+                  Settings
+                </Link>
+              )}
               <button
                 type="button"
                 role="menuitem"

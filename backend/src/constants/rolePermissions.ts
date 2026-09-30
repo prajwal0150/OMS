@@ -8,25 +8,43 @@ const grant = (permissions: Permission[]): Permission[] => [...permissions];
 const except = (excluded: Permission[]): Permission[] =>
   ALL_PERMISSIONS.filter((permission) => !excluded.includes(permission));
 
+/**
+ * District administrators own the administrator accounts of their own district
+ * (they appoint the unit, community and committee staff of every unit inside
+ * it), so only the platform wide and account security permissions are withheld.
+ * The backend scope guard still pins every write to the caller's own district.
+ *
+ * `content.publish` is withheld as well: publishing is a single, organisation
+ * wide editorial decision. A district administrator still holds `content.approve`
+ * so they can review their own units' submissions, but only the Super Admin can
+ * make content live on the public website.
+ */
 const DISTRICT_ADMIN_EXCLUDED: Permission[] = [
   PERMISSIONS.ORGANIZATION_UPDATE,
-  PERMISSIONS.ADMIN_ACCOUNT_CREATE,
-  PERMISSIONS.ADMIN_ACCOUNT_UPDATE,
-  PERMISSIONS.ADMIN_ACCOUNT_DEACTIVATE,
-  PERMISSIONS.ADMIN_ACCOUNT_SUSPEND,
-  PERMISSIONS.ADMIN_ACCOUNT_ASSIGN_SCOPE,
   PERMISSIONS.USER_MANAGE,
   PERMISSIONS.ROLE_MANAGE,
   PERMISSIONS.PERMISSION_MANAGE,
   PERMISSIONS.SETTINGS_MANAGE,
+  PERMISSIONS.CONTENT_PUBLISH,
 ];
 
 const UNIT_ADMIN_EXCLUDED: Permission[] = [
+  // Inherits CONTENT_PUBLISH: a unit administrator submits for review, the
+  // Super Admin publishes.
   ...DISTRICT_ADMIN_EXCLUDED,
+  // Managing administrator accounts stays a district level job.
+  PERMISSIONS.ADMIN_ACCOUNT_CREATE,
+  PERMISSIONS.ADMIN_ACCOUNT_UPDATE,
+  PERMISSIONS.ADMIN_ACCOUNT_ACTIVATE,
+  PERMISSIONS.ADMIN_ACCOUNT_DEACTIVATE,
+  PERMISSIONS.ADMIN_ACCOUNT_SUSPEND,
+  PERMISSIONS.ADMIN_ACCOUNT_DELETE,
+  PERMISSIONS.ADMIN_ACCOUNT_ASSIGN_SCOPE,
   PERMISSIONS.UNIT_CREATE,
   PERMISSIONS.UNIT_DELETE,
   PERMISSIONS.COMMUNITY_DELETE,
   PERMISSIONS.DISTRICT_UPDATE,
+  PERMISSIONS.MEMBER_REGISTER_APPROVE,
   PERMISSIONS.CONTENT_APPROVE,
   PERMISSIONS.AUDIT_VIEW,
 ];

@@ -9,7 +9,10 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "seed": "tsx scripts/seed.ts",
+    "sync:roles": "tsx scripts/syncRolePermissions.ts",
+    "smoke": "tsx scripts/smoke.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck:tests": "tsc --noEmit -p tsconfig.typecheck.json",
     "test": "vitest run",
     "test:watch": "vitest"
   },

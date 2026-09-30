@@ -49,6 +49,21 @@ export class BaseRepository<TDocument extends mongoose.Document> {
     return (this.options.populate ?? []) as any;
   }
 
+  /**
+   * Lean documents do not expose the `id` virtual, so it is re-attached here.
+   * Without it, code that reads `document.id` silently receives `undefined`
+   * (which used to update the wrong record or the first record in a collection).
+   */
+  private withId<TDocumentLike extends { _id?: unknown }>(
+    document: TDocumentLike | null,
+  ): TDocumentLike | null {
+    if (!document) return null;
+    return {
+      ...(document as Record<string, unknown>),
+      id: String(document._id),
+    } as unknown as TDocumentLike;
+  }
+
   buildSearchFilter(search?: string): FilterQuery<TDocument> {
     if (!search || search.trim().length === 0 || this.searchableFields.length === 0) {
       return {};
@@ -104,20 +119,29 @@ export class BaseRepository<TDocument extends mongoose.Document> {
       this.model.countDocuments(finalFilter).exec(),
     ]);
 
-    return { items, meta: buildPaginationMeta(total, page, limit) };
+    return {
+      items: items.map((item) => this.withId(item) as TDocument),
+      meta: buildPaginationMeta(total, page, limit),
+    };
   }
 
   async findById(id: string): Promise<TDocument | null> {
     if (!mongoose.isValidObjectId(id)) throw ApiError.badRequest('Invalid identifier');
-    return this.model.findById(id).populate(this.getPopulateOptions()).lean<TDocument>().exec();
+    const document = await this.model
+      .findById(id)
+      .populate(this.getPopulateOptions())
+      .lean<TDocument>()
+      .exec();
+    return this.withId(document);
   }
 
   async findOne(filter: QueryLike): Promise<TDocument | null> {
-    return this.model
+    const document = await this.model
       .findOne(filter as FilterQuery<TDocument>)
       .populate(this.getPopulateOptions())
       .lean<TDocument>()
       .exec();
+    return this.withId(document);
   }
 
   async exists(filter: QueryLike): Promise<boolean> {
@@ -143,7 +167,7 @@ export class BaseRepository<TDocument extends mongoose.Document> {
         `${entityLabel} not found or outside your assigned organizational scope`,
       );
     }
-    return document;
+    return this.withId(document) as TDocument;
   }
 
   async create(data: QueryLike): Promise<TDocument> {
@@ -158,11 +182,12 @@ export class BaseRepository<TDocument extends mongoose.Document> {
 
   async updateById(id: string, data: QueryLike): Promise<TDocument | null> {
     if (!mongoose.isValidObjectId(id)) throw ApiError.badRequest('Invalid identifier');
-    return this.model
+    const document = await this.model
       .findByIdAndUpdate(id, data, { new: true, runValidators: true })
       .populate(this.getPopulateOptions())
       .lean<TDocument>()
       .exec();
+    return this.withId(document);
   }
 
   /** Scoped update â€” the caller may only touch documents inside their scope. */

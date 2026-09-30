@@ -7,9 +7,12 @@ import { createCrudRouter } from '../../shared/crudRoutes';
 import { memberController } from './member.controller';
 import {
   accountStatusSchema,
+  approveRegistrationSchema,
   createMemberAccountSchema,
   createMemberSchema,
   memberListQuerySchema,
+  rejectRegistrationSchema,
+  registrationListQuerySchema,
   updateMemberSchema,
   updateOwnProfileSchema,
 } from './member.validation';
@@ -59,6 +62,29 @@ memberRoutes.get(
   authenticate,
   requirePermission(PERMISSIONS.MEMBER_VIEW),
   memberController.breakdowns,
+);
+
+/* ---------- Registration approvals (district level) ---------- */
+memberRoutes.get(
+  '/requests',
+  authenticate,
+  requirePermission(PERMISSIONS.MEMBER_REGISTER_APPROVE),
+  validateQuery(registrationListQuerySchema),
+  memberController.listRegistrationRequests,
+);
+memberRoutes.post(
+  '/:id/approve',
+  authenticate,
+  requirePermission(PERMISSIONS.MEMBER_REGISTER_APPROVE),
+  validateBody(approveRegistrationSchema),
+  memberController.approveRegistration,
+);
+memberRoutes.post(
+  '/:id/reject',
+  authenticate,
+  requirePermission(PERMISSIONS.MEMBER_REGISTER_APPROVE),
+  validateBody(rejectRegistrationSchema),
+  memberController.rejectRegistration,
 );
 
 /* ---------- Member records ---------- */

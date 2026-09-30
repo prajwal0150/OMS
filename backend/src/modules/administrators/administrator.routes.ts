@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { PERMISSIONS } from '../../constants/permissions';
 import { authenticate } from '../../middleware/authenticate';
-import { requireAnyPermission, requirePermission } from '../../middleware/authorize';
+import { requireAdministrator, requireAnyPermission, requirePermission } from '../../middleware/authorize';
 import { validateBody, validateQuery } from '../../middleware/validate';
 import { administratorController } from './administrator.controller';
 import {
@@ -10,6 +10,7 @@ import {
   createAdministratorSchema,
   rolePermissionsSchema,
   updateAdministratorSchema,
+  updateOwnAdministratorProfileSchema,
 } from './administrator.validation';
 
 export const administratorRoutes = Router();
@@ -56,6 +57,27 @@ administratorRoutes.post(
   administratorController.create,
 );
 
+/* ---------- Own account (self service) ---------- */
+/*
+ * Registered before `/:id` on purpose: Express matches in declaration order,
+ * so a later `/:id` would otherwise capture the literal string "me" as an id.
+ * Any administrator may read and edit their own account, so this needs no
+ * `admin.account.*` permission — self service is not account administration.
+ */
+administratorRoutes.get(
+  '/me',
+  authenticate,
+  requireAdministrator,
+  administratorController.ownProfile,
+);
+administratorRoutes.patch(
+  '/me',
+  authenticate,
+  requireAdministrator,
+  validateBody(updateOwnAdministratorProfileSchema),
+  administratorController.updateOwnProfile,
+);
+
 administratorRoutes.get(
   '/:id',
   authenticate,
@@ -88,4 +110,11 @@ administratorRoutes.post(
   authenticate,
   requirePermission(PERMISSIONS.ADMIN_ACCOUNT_RESET_PASSWORD),
   administratorController.resetPassword,
+);
+
+administratorRoutes.delete(
+  '/:id',
+  authenticate,
+  requirePermission(PERMISSIONS.ADMIN_ACCOUNT_DELETE),
+  administratorController.remove,
 );

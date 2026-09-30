@@ -67,12 +67,14 @@ const seedRoles = async (): Promise<number> => {
           name,
           label: meta.label,
           description: meta.description,
-          permissions: ROLE_PERMISSIONS[name],
           rank: meta.rank,
           scopeType: meta.scopeType,
           isSystem: true,
           status: RECORD_STATUS.ACTIVE,
         },
+        // Grant newly added default permissions on re-runs without revoking
+        // customisations made later through role.manage (still idempotent).
+        $addToSet: { permissions: { $each: ROLE_PERMISSIONS[name] } },
       },
       { upsert: true },
     );

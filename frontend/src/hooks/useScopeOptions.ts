@@ -3,7 +3,7 @@ import {
   fetchCommitteeOptions,
   fetchCommunityOptions,
   fetchUnitOptions,
-} from '../fetaures/Admin/Organization/services/organizationService';
+} from '../services/api/organizationService';
 import type { Committee, OptionItem } from '../types';
 
 export interface ScopeOptions {

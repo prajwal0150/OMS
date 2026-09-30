@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Save } from 'lucide-react';
+import { KeyRound, Save } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -41,6 +42,7 @@ type FormValues = z.infer<typeof schema>;
  */
 export function ProfilePage() {
   const { user } = useAuthState();
+  const location = useLocation();
   const { data: member, loading, error, reload } = usePortalData<Member>(fetchMyProfile);
   const [saving, setSaving] = useState(false);
 
@@ -105,6 +107,14 @@ export function ProfilePage() {
             <p className="truncate text-sm text-muted">{member.memberId}</p>
           </div>
           <div className="ml-auto flex flex-wrap items-center justify-end gap-1">
+            <Link
+              to="/change-password"
+              state={{ from: location.pathname }}
+              className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs font-medium text-slate-600 transition-colors hover:border-primary/40 hover:bg-primary-soft/40 hover:text-primary"
+            >
+              <KeyRound className="h-3.5 w-3.5" aria-hidden />
+              Change password
+            </Link>
             <Badge tone="primary">{humanize(member.membershipType)}</Badge>
             <Badge tone={member.status === 'ACTIVE' ? 'success' : 'warning'} dot>
               {humanize(member.status)}

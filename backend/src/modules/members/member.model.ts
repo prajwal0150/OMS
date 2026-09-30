@@ -4,12 +4,14 @@ import {
   GENDER,
   MEMBERSHIP_TYPE,
   MEMBER_STATUS,
+  REGISTRATION_STATUS,
 } from '../../constants/enums';
 import type {
   CommitteePosition,
   Gender,
   MembershipType,
   MemberStatus,
+  RegistrationStatus,
 } from '../../constants/enums';
 
 export interface MemberCommitteePosition {
@@ -46,6 +48,12 @@ export interface MemberDocument extends mongoose.Document {
   committeePositions: MemberCommitteePosition[];
   membershipType: MembershipType;
   status: MemberStatus;
+  registrationStatus?: RegistrationStatus;
+  registrationRequestedBy?: mongoose.Types.ObjectId;
+  registrationRequestedAt?: Date;
+  registrationReviewedBy?: mongoose.Types.ObjectId;
+  registrationReviewedAt?: Date;
+  registrationReviewNote?: string;
   createdBy?: mongoose.Types.ObjectId;
   updatedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -109,6 +117,16 @@ const memberSchema = new mongoose.Schema<MemberDocument>(
       default: MEMBER_STATUS.PENDING,
       index: true,
     },
+    registrationStatus: {
+      type: String,
+      enum: Object.values(REGISTRATION_STATUS),
+      index: true,
+    },
+    registrationRequestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    registrationRequestedAt: { type: Date },
+    registrationReviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    registrationReviewedAt: { type: Date },
+    registrationReviewNote: { type: String, maxlength: 500 },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
@@ -124,6 +142,10 @@ memberSchema.index({ district: 1, communities: 1, status: 1 });
 memberSchema.index({ district: 1, status: 1, createdAt: -1 });
 memberSchema.index({ firstName: 1, lastName: 1 });
 memberSchema.index({ memberId: 1, status: 1 });
+memberSchema.index(
+  { registrationStatus: 1, createdAt: -1 },
+  { partialFilterExpression: { registrationStatus: { $exists: true } } },
+);
 
 memberSchema.virtual('fullName').get(function fullName(this: MemberDocument) {
   return [this.firstName, this.middleName, this.lastName].filter(Boolean).join(' ');

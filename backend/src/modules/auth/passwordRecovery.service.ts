@@ -22,11 +22,12 @@ export class PasswordRecoveryService {
     }
 
     const { token, tokenHash, expiresAt } = generateResetToken();
-    await userRepository.setPasswordReset(user.id, tokenHash, expiresAt);
+    const userId = String(user._id);
+    await userRepository.setPasswordReset(userId, tokenHash, expiresAt);
     await auditLogService.record({
       action: AUDIT_ACTION.PASSWORD_RESET,
       entity: 'Auth',
-      entityId: user.id,
+      entityId: userId,
       description: `Password reset requested for ${user.email}`,
       request: req,
     });
@@ -41,12 +42,13 @@ export class PasswordRecoveryService {
     const user = await userRepository.findByPasswordResetToken(hashToken(input.token));
     if (!user) throw ApiError.badRequest('This password reset link is invalid or has expired');
 
-    await userRepository.setPassword(user.id, await hashPassword(input.newPassword));
-    await userRepository.revokeAllRefreshTokens(user.id);
+    const userId = String(user._id);
+    await userRepository.setPassword(userId, await hashPassword(input.newPassword));
+    await userRepository.revokeAllRefreshTokens(userId);
     await auditLogService.record({
       action: AUDIT_ACTION.PASSWORD_RESET,
       entity: 'Auth',
-      entityId: user.id,
+      entityId: userId,
       description: `Password reset completed for ${user.email}`,
       request: req,
     });

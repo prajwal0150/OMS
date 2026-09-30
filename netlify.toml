@@ -1,0 +1,43 @@
+# Netlify deployment for the HPS OMS web client.
+#
+# The client is a single page app built by Vite. Two things matter here:
+#   1. the publish directory must be `dist` (Vite's default output),
+#   2. every unknown path must fall back to index.html, otherwise a deep link
+#      such as /admin/members or /portal/profile 404s on a hard refresh.
+#
+# The API origin is NOT baked in here. It comes from the VITE_API_BASE_URL
+# environment variable set in the Netlify UI, because the same commit is built
+# for preview and production deploys which talk to different APIs.
+
+[build]
+  base = "frontend"
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Client side routing: hand every path to the SPA router.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Hashed build assets are immutable; let Netlify cache them for a year.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# index.html must never be cached, or a deploy is not picked up by open tabs.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
