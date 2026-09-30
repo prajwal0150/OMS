@@ -9,6 +9,22 @@ import { apiLimiter } from './middleware/rateLimit';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { apiRouter } from './routes';
 
+/**
+ * Resolves the browser origins allowed to call this API.
+ *
+ * CLIENT_URL accepts a comma separated list so Netlify preview deploys can be
+ * allowed alongside the production site. Splitting happens here rather than
+ * relying on the raw string: passing "https://a,https://b" through as a single
+ * array entry would match no real origin and silently block every request.
+ */
+export const resolveAllowedOrigins = (
+  clientUrls: string[],
+  isProduction: boolean,
+): string[] =>
+  isProduction
+    ? clientUrls
+    : [...clientUrls, 'http://localhost:5173', 'http://localhost:3000'];
+
 export const createApp = (): express.Application => {
   const app = express();
 
@@ -20,7 +36,7 @@ export const createApp = (): express.Application => {
   );
   app.use(
     cors({
-      origin: env.isProduction ? [env.CLIENT_URL] : [env.CLIENT_URL, 'http://localhost:5173', 'http://localhost:3000'],
+      origin: resolveAllowedOrigins(env.clientUrls, env.isProduction),
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],

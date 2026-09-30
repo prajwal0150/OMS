@@ -1,5 +1,6 @@
 ﻿import type { ReactNode } from 'react';
 import { Card, EmptyState, ErrorState, Pagination, Skeleton } from '../../../../../components/ui';
+import { resolveAssetUrl } from '../../../../../services/api/httpClient';
 
 const YOUTUBE = new RegExp('(?:youtube\\\\.com/watch\\\\?v=|youtu\\\\.be/)([\\\\w-]{6,})');
 const VIMEO = new RegExp('vimeo\\\\.com/(\\\\d+)');
@@ -33,7 +34,7 @@ export function VideoEmbed({ url, caption }: VideoEmbedProps) {
           loading="lazy"
         />
       ) : (
-        <video src={url} controls className="w-full" preload="metadata" />
+        <video src={resolveAssetUrl(url)} controls className="w-full" preload="metadata" />
       )}
       {caption && <figcaption className="px-3 py-1.5 text-xs text-muted">{caption}</figcaption>}
     </figure>

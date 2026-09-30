@@ -1,7 +1,7 @@
 // Validates the deployment config files and records what each platform needs.
 // Uses python3 for the YAML parse so the repo needs no extra dependency.
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const report = [];
 const ok = (m) => report.push(`PASS  ${m}`);
@@ -67,25 +67,85 @@ try {
 }
 
 // ---- every relative asset render must be resolved ----
-const assetUsers = [
-  'frontend/src/components/ui/FileUploader.tsx',
-  'frontend/src/fetaures/Admin/SuperAdmin/Content/pages/ContentFeedPage.tsx',
-  'frontend/src/fetaures/Admin/DistrictAdmin/Content/pages/ContentFeedPage.tsx',
-  'frontend/src/fetaures/Admin/UnitAdmin/Content/pages/ContentFeedPage.tsx',
-  'frontend/src/fetaures/Admin/SuperAdmin/Members/pages/MemberDetailsPage.tsx',
-  'frontend/src/fetaures/Admin/DistrictAdmin/Members/pages/MemberDetailsPage.tsx',
-  'frontend/src/fetaures/Admin/UnitAdmin/Members/pages/MemberDetailsPage.tsx',
-];
+// Scans all of frontend/src instead of a hardcoded list, so a future page
+// cannot silently reintroduce the bug.
+const ASSET_ATTR =
+  /(?:src|href|srcSet)=\{(?!resolveAssetUrl)([^{}]*?\.(?:url|photo|logo|coverImage|image|file|document|src|thumbnail))\}/g;
+
+function walk(dir) {
+  const out = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) out.push(...walk(full));
+    else if (/\.tsx?$/.test(entry.name)) out.push(full);
+  }
+  return out;
+}
+
+let scanned = 0;
 let unresolved = 0;
-for (const f of assetUsers) {
+for (const f of walk('frontend/src')) {
+  scanned += 1;
   const raw = readFileSync(f, 'utf8');
-  const bad2 = [...raw.matchAll(/src=\{(?!resolveAssetUrl)([^{}]*?\.(?:url|photo|logo|coverImage))\}/g)];
-  if (bad2.length) {
-    bad(`${f}: ${bad2.length} unresolved asset src`);
-    unresolved += bad2.length;
+  const hits = [...raw.matchAll(ASSET_ATTR)];
+  if (hits.length) {
+    unresolved += hits.length;
+    bad(`${f.replace(/\\/g, '/')}: ${hits.map((h) => h[0]).join(' | ')}`);
   }
 }
-if (!unresolved) ok('all gallery / photo / preview <img src> go through resolveAssetUrl');
+if (!unresolved) ok(`all ${scanned} frontend sources resolve asset URLs via resolveAssetUrl`);
 
-writeFileSync('deploy-report.txt', report.join('\n') + '\n');
+// ---- external embeds must NOT be rewritten ----
+try {
+  const raw = readFileSync(
+    'frontend/src/fetaures/Public/Layouts/components/publicSections/index.tsx',
+    'utf8',
+  );
+  if (/resolveAssetUrl\(src\)/.test(raw)) throw new Error('iframe embed URL was wrapped');
+  if (!/resolveAssetUrl\(url\)/.test(raw)) throw new Error('<video> not resolved');
+  ok('VideoEmbed: external iframe src untouched, <video src> resolved');
+} catch (e) {
+  bad(`VideoEmbed -> ${e.message}`);
+}
+
+// ---- frontend env var name matches the code ----
+try {
+  const client = readFileSync('frontend/src/services/api/apiClient.ts', 'utf8');
+  const http = readFileSync('frontend/src/services/api/httpClient.ts', 'utf8');
+  const used = new Set([
+    ...[...client.matchAll(/import\.meta\.env\.([A-Z_]+)/g)].map((m) => m[1]),
+    ...[...http.matchAll(/import\.meta\.env\.([A-Z_]+)/g)].map((m) => m[1]),
+  ]);
+  const example = readFileSync('frontend/.env.example', 'utf8');
+  for (const v of used) {
+    if (!example.includes(v)) throw new Error(`${v} used in code but missing from .env.example`);
+  }
+  ok(`frontend env vars documented: ${[...used].join(', ')}`);
+} catch (e) {
+  bad(`frontend env -> ${e.message}`);
+}
+
+// ---- render.yaml must cover every required backend var ----
+try {
+  const src = readFileSync('backend/src/config/env.ts', 'utf8');
+  const block = src.slice(src.indexOf('z.object({'), src.indexOf('.safeParse'));
+  // Vars that must come from the environment rather than a default.
+  const required = [...block.matchAll(/^\s*([A-Z_]+):\s*z\.string\(\)\.min/gm)].map((m) => m[1]);
+  const yamlText = readFileSync('render.yaml', 'utf8');
+  for (const key of required) {
+    if (!new RegExp(`key:\\s*${key}\\b`).test(yamlText)) throw new Error(`render.yaml lacks ${key}`);
+  }
+  if (!/STORAGE_PROVIDER/.test(yamlText)) throw new Error('render.yaml lacks STORAGE_PROVIDER');
+  ok(`render.yaml covers required backend vars: ${required.join(', ')}`);
+} catch (e) {
+  bad(`render.yaml env coverage -> ${e.message}`);
+}
+
+// Write the report only when something fails, so running this check does not
+// leave a stray file in the working tree.
+if (report.some((line) => line.startsWith('FAIL'))) {
+  writeFileSync('deploy-report.txt', report.join('\n') + '\n');
+}
 console.log(report.join('\n'));
+// Non-zero exit lets CI or a pre-deploy hook gate on this check.
+if (report.some((line) => line.startsWith('FAIL'))) process.exitCode = 1;

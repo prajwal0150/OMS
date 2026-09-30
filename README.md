@@ -213,6 +213,57 @@ See `backend/.env.example` for the complete list: `PORT`, `API_PREFIX`,
 `VITE_API_BASE_URL` (defaults to the relative `/api`, which Vite proxies in
 development).
 
+`CLIENT_URL` accepts a **comma separated** list, e.g.
+`https://oms.netlify.app,https://deploy-preview--12--oms.netlify.app`, so preview
+deploys can be allowed alongside the production site. Origins are split and
+trimmed before reaching CORS - do not reintroduce the raw string, because the
+browser would then match no origin and silently block every request.
+
+### Deploying to Netlify + Render
+
+Two manifests at the repo root cover the whole setup.
+
+**Backend (Render).** `render.yaml` is a Blueprint: create the service with
+*New > Blueprint* pointing at the repository. It builds from `backend/`, runs
+`npm start`, and health-checks `/health`. Render prompts for the secrets
+(`MONGODB_URI`, `CLIENT_URL`, `SUPER_ADMIN_*`); `JWT_*_SECRET` are generated.
+Never commit real credentials.
+
+**Frontend (Netlify).** `netlify.toml` builds from `frontend/` and publishes
+`dist`. The catch-all `/*` -> `/index.html` redirect is what keeps deep links
+such as `/admin/members` working on a hard refresh.
+
+Deploy in this order, because each step needs the previous one's URL:
+
+1. Deploy the API, and note its URL, e.g. `https://hps-oms-api.onrender.com`.
+2. Set `CLIENT_URL` on the Render service to the Netlify origin, plus the
+   preview origin pattern if you use branch deploys.
+3. Set `VITE_API_BASE_URL` in Netlify to `https://hps-oms-api.onrender.com/api`
+   and deploy the frontend.
+
+That variable is required in production, not optional. The API returns upload
+paths like `/uploads/foo.jpg`; on a different origin those resolve against
+Netlify and 404. `resolveAssetUrl()` rewrites them onto the API origin, which is
+why every gallery, cover image, member photo and `<video src>` must pass through
+it. Local development needs no value because Vite proxies `/api` and `/uploads`.
+
+Verify the manifests before deploying:
+
+```bash
+node tools/verify-deploy-config.mjs   # 7 checks; exits non-zero on failure
+```
+
+**Uploads are ephemeral without a disk.** `STORAGE_PROVIDER=local` writes to the
+service filesystem, which Render wipes on every deploy and restart, leaving dead
+image paths in the database. Attach a Render Disk mounted at the upload
+directory (see the commented block in `render.yaml`) or switch to
+`STORAGE_PROVIDER=cloudinary`/`s3` before uploading real content.
+
+After the first deploy, seed once against the production database:
+`npm run seed` (creates the initial Super Admin only when none exists) and
+`npm run sync:roles` (the role matrix is version-controlled, so an existing
+database keeps the previous grants).
+
 ## Troubleshooting
 
 * **Dashboard shows 0 records** — run `npm run seed`; the API reads

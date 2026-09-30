@@ -39,6 +39,7 @@ import {
   type EventRecord,
   type Member,
 } from '../../../../types';
+import { resolveAssetUrl } from '../../../../services/api/httpClient';
 
 export function MemberDashboardPage() {
   const { displayName } = useAuthState();
@@ -185,7 +186,12 @@ export function MemberDashboardPage() {
               className="overflow-hidden rounded-lg border border-line bg-white shadow-sm transition-colors hover:border-primary/40"
             >
               {item.coverImage ? (
-                <img src={item.coverImage} alt="" loading="lazy" className="h-24 w-full object-cover" />
+                <img
+                  src={resolveAssetUrl(item.coverImage)}
+                  alt=""
+                  loading="lazy"
+                  className="h-24 w-full object-cover"
+                />
               ) : (
                 <div className="flex h-24 items-center justify-center bg-slate-50 text-slate-300">
                   <FileText className="h-6 w-6" aria-hidden />

@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { ArrowLeft, Calendar, Eye, MapPin, Users } from 'lucide-react';
 import { Badge, ErrorState, ImageGallery, LoadingState } from '../../../../components/ui';
 import { humanize, refName } from '../../../../types';
+import { resolveAssetUrl } from '../../../../services/api/httpClient';
 import { VideoEmbed } from '../../Layouts/components/publicSections';
 import { usePublicDetail, usePublicList } from '../../hooks/usePublicData';
 import { fetchContentBySlug, fetchContentPublic } from '../../services/publicService';
@@ -68,7 +69,11 @@ export function ContentDetailsPage() {
       </p>
 
       {content.coverImage && (
-        <img src={content.coverImage} alt="" className="mt-4 w-full rounded-lg border border-line object-cover" />
+        <img
+          src={resolveAssetUrl(content.coverImage)}
+          alt=""
+          className="mt-4 w-full rounded-lg border border-line object-cover"
+        />
       )}
 
       {/* The server sanitizes this HTML before persisting it. */}

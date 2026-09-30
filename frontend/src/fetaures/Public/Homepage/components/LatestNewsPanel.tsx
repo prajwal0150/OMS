@@ -9,6 +9,7 @@ import {
   type BadgeTone,
 } from '../../../../components';
 import { label, type ContentRecord } from '../../../../types';
+import { resolveAssetUrl } from '../../../../services/api/httpClient';
 import { PanelHeader } from './PanelHeader';
 
 /** Badge colour per content type (blue district update, green community, purple event). */
@@ -93,7 +94,7 @@ export function LatestNewsPanel({ items, loading, error, onRetry }: LatestNewsPa
                 >
                   {item.coverImage ? (
                     <img
-                      src={item.coverImage}
+                      src={resolveAssetUrl(item.coverImage)}
                       alt=""
                       loading="lazy"
                       className="h-32 w-full object-cover"

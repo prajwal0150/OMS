@@ -13,6 +13,7 @@ import { MemberToolbar } from '../../components/MemberToolbar';
 import { usePortalList } from '../../hooks/usePortalData';
 import { fetchMyContent } from '../../services/memberPortalService';
 import { humanize, refName, type ContentRecord } from '../../../../types';
+import { resolveAssetUrl } from '../../../../services/api/httpClient';
 
 /** Content the member may read, honouring visibility rules on the server. */
 export function MemberContentPage() {
@@ -53,7 +54,12 @@ export function MemberContentPage() {
               className="group flex flex-col overflow-hidden rounded-lg border border-line bg-white shadow-sm transition-colors hover:border-primary/40"
             >
               {item.coverImage ? (
-                <img src={item.coverImage} alt="" loading="lazy" className="h-32 w-full object-cover" />
+                <img
+                  src={resolveAssetUrl(item.coverImage)}
+                  alt=""
+                  loading="lazy"
+                  className="h-32 w-full object-cover"
+                />
               ) : (
                 <div className="flex h-32 items-center justify-center bg-slate-50 text-slate-300">
                   <FileText className="h-7 w-7" aria-hidden />

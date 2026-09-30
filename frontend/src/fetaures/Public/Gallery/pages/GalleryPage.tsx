@@ -1,6 +1,7 @@
 import { PublicPageHeader, PublicState } from '../../Layouts/components/publicSections';
 import { usePublicDetail } from '../../hooks/usePublicData';
 import { fetchGalleryPublic } from '../../services/publicService';
+import { resolveAssetUrl } from '../../../../services/api/httpClient';
 
 export function GalleryPage() {
   const { data: images, loading, error, reload } = usePublicDetail(() => fetchGalleryPublic(72));
@@ -29,7 +30,7 @@ export function GalleryPage() {
               className="group overflow-hidden rounded-lg border border-line bg-white shadow-sm"
             >
               <img
-                src={image.url}
+                src={resolveAssetUrl(image.url)}
                 alt={image.alt ?? image.caption ?? ''}
                 loading="lazy"
                 className="h-40 w-full object-cover transition-transform duration-200 group-hover:scale-105"

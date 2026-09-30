@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { FileText } from 'lucide-react';
 import { Badge } from '../../../../components/ui';
 import { CONTENT_TYPE, humanize, refName } from '../../../../types';
+import { resolveAssetUrl } from '../../../../services/api/httpClient';
 import {
   PublicFilterSelect,
   PublicPageHeader,
@@ -65,7 +66,12 @@ export function ContentListPage() {
               className="group flex flex-col overflow-hidden rounded-lg border border-line bg-white shadow-sm transition-colors hover:border-primary/40"
             >
               {item.coverImage ? (
-                <img src={item.coverImage} alt="" loading="lazy" className="h-36 w-full object-cover" />
+                <img
+                  src={resolveAssetUrl(item.coverImage)}
+                  alt=""
+                  loading="lazy"
+                  className="h-36 w-full object-cover"
+                />
               ) : (
                 <div className="flex h-36 items-center justify-center bg-slate-50 text-slate-300">
                   <FileText className="h-8 w-8" aria-hidden />
