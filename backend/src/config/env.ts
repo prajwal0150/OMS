@@ -49,6 +49,22 @@ if (!parsed.success) {
 
 const raw = parsed.data;
 
+// Fail loudly on the classic hosted-deploy mistake: pasting the local
+// development URI (mongodb://localhost:27017/...) into Render. There is no
+// MongoDB on the Render container's localhost, so mongoose reports
+// ECONNREFUSED 127.0.0.1:27017 and the service exits 1. Naming the actual
+// problem here saves reading through a TopologyDescription dump.
+if (raw.NODE_ENV === 'production' && /^mongodb(\+srv)?:\/\/(localhost|127\.0\.0\.1)/.test(raw.MONGODB_URI)) {
+  // eslint-disable-next-line no-console
+  console.error(
+    'MONGODB_URI points at localhost while NODE_ENV=production.\n' +
+      'This host has no local MongoDB; the API cannot start. Set MONGODB_URI to a\n' +
+      'hosted cluster such as MongoDB Atlas:\n' +
+      '  mongodb+srv://<user>:<password>@<cluster>.mongodb.net/hps_oms?retryWrites=true&w=majority',
+  );
+  process.exit(1);
+}
+
 export const env = {
   ...raw,
   isProduction: raw.NODE_ENV === 'production',

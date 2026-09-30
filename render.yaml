@@ -7,15 +7,43 @@
 #   MONGODB_URI, JWT_ACCESS_SECRET and JWT_REFRESH_SECRET are declared with
 #   `sync: false`, so Render prompts for them and stores them as secret values.
 #   Never commit real credentials.
+#
+# ---------------------------------------------------------------------------
+# MONGODB_URI IS THE VALUE THAT BREAKS DEPLOYS - READ THIS FIRST
+# ---------------------------------------------------------------------------
+# Symptom:
+#   MongooseServerSelectionError: connect ECONNREFUSED ::1:27017
+#   connect ECONNREFUSED 127.0.0.1:27017
+#   ==> Exited with status 1
+#
+# Meaning: MONGODB_URI is still the local development value
+# (mongodb://localhost:27017/hps_OMS from backend/.env.example). Render's
+# containers have no MongoDB on localhost, so the connection is refused and the
+# process exits before it ever listens on PORT. The API is then unreachable, the
+# public site gets no JSON back, and the homepage renders blank.
+#
+# Fix: set MONGODB_URI to a real hosted MongoDB in the Render dashboard
+# (Environment), for example a MongoDB Atlas free cluster:
+#   mongodb+srv://<user>:<password>@<cluster>.mongodb.net/hps_oms?retryWrites=true&w=majority
+# Then redeploy. Atlas also needs Network Access -> IP Access List to include
+# 0.0.0.0/0 (Render's outbound IPs are not static), or the connection will hang
+# instead of being refused.
+#
+# Watch out: dotenv logs "injected env (0) from .env" on Render and that is
+# NORMAL. Render injects real variables from its own environment; the absence of
+# a .env file in the image is expected and is not the problem.
+#
+# Note: Render does not offer MongoDB (only Postgres/Redis/Key Value), so
+# Atlas - or another external MongoDB host - is required. The commented
+# `databases:` block below is intentionally NOT usable for this app.
 
 databases:
-  # Drop this block if you use MongoDB Atlas (recommended - a Render free
-  # Postgres-style database is not what this app needs; the API speaks
-  # MONGODB_URI). Leave it commented out to avoid creating a stray instance.
+  # Render provisions Postgres/Redis, not MongoDB, so this app cannot use the
+  # `databases:` key. Point MONGODB_URI at MongoDB Atlas instead. The block is
+  # kept only to show where a persistent disk would be attached.
   #
-  # - name: hps-oms-mongo
+  # - name: hps-oms-api
   #   plan: starter
-  #   ipAllowList: []      # only Render's internal network / your IP
   #   disk:               # persistent storage for uploads
   #     name: uploads
   #     mountPath: /opt/render/project/src/backend/uploads
@@ -42,6 +70,10 @@ services:
         value: /api
 
       # ---- database (secret) ----
+      # PROMPT: paste a real hosted MongoDB URI, e.g.
+      #   mongodb+srv://user:pass@cluster.mongodb.net/hps_oms?retryWrites=true&w=majority
+      # Never accept the mongodb://localhost:27017 default from .env.example:
+      # that is what produces ECONNREFUSED 127.0.0.1:27017 and a failed deploy.
       - key: MONGODB_URI
         sync: false
 

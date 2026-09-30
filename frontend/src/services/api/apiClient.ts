@@ -173,11 +173,20 @@ apiClient.interceptors.response.use(
 /** Returns `data` from the { success, message, data, meta } response envelope. */
 export const unwrap = <T>(response: { data: { data: T } }): T => response.data.data;
 
-/** Unwraps a list response into `{ items, meta }`. */
+/**
+ * Unwraps a list response into `{ items, meta }`.
+ *
+ * The `data` key is absent on error envelopes ({ success: false, message,
+ * errors }) and on a 404 from an unmatched route. Returning it unguarded made
+ * `items` undefined, and the first `.length` read in the consuming component
+ * threw "Cannot read properties of undefined (reading 'length')", taking the
+ * whole page down instead of showing an error. Coerce to an array so a shape
+ * mismatch degrades to an empty list rather than a white screen.
+ */
 export const unwrapList = <T>(response: {
-  data: { data: T[]; meta?: ApiResponse<T[]>['meta'] };
+  data: { data?: T[]; meta?: ApiResponse<T[]>['meta'] };
 }): { items: T[]; meta?: ApiResponse<T[]>['meta'] } => ({
-  items: response.data.data,
+  items: Array.isArray(response.data.data) ? response.data.data : [],
   meta: response.data.meta,
 });
 

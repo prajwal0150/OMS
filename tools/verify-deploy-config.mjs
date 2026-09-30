@@ -146,6 +146,25 @@ try {
 if (report.some((line) => line.startsWith('FAIL'))) {
   writeFileSync('deploy-report.txt', report.join('\n') + '\n');
 }
+// ---- list responses must never hand back undefined items ----
+// Regression guard for the production homepage crash:
+//   "Cannot read properties of undefined (reading 'length')"
+// unwrapList() used to pass response.data.data straight through, but the error
+// envelope { success:false, message, errors } has no `data` key, so items was
+// undefined and every .length read in HomePage/UnitsPanel/AnnouncementsPanel
+// threw, white-screening the page. Every list page reaches this through
+// unwrapList, so fixing it there fixes all of them at once.
+try {
+  const client = readFileSync('frontend/src/services/api/apiClient.ts', 'utf8');
+  const listBlock = client.slice(client.indexOf('export const unwrapList'));
+  if (!/Array\.isArray\(response\.data\.data\)/.test(listBlock)) {
+    throw new Error('unwrapList does not guard against a missing data array');
+  }
+  ok('unwrapList coerces a missing/error-envelope data key to []');
+} catch (e) {
+  bad(`unwrapList guard -> ${e.message}`);
+}
+
 console.log(report.join('\n'));
 // Non-zero exit lets CI or a pre-deploy hook gate on this check.
 if (report.some((line) => line.startsWith('FAIL'))) process.exitCode = 1;

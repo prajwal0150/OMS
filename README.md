@@ -266,6 +266,21 @@ database keeps the previous grants).
 
 ## Troubleshooting
 
+* **`MongooseServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017` and
+  `==> Exited with status 1` on Render** — `MONGODB_URI` is still the local
+  value (`mongodb://localhost:27017/...`). Render's containers have no MongoDB
+  on localhost, so the API exits before listening. Set `MONGODB_URI` in the
+  Render dashboard to a real hosted cluster, e.g. a MongoDB Atlas free tier:
+  `mongodb+srv://<user>:<password>@<cluster>.mongodb.net/hps_oms?retryWrites=true&w=majority`,
+  then redeploy. Render provisions Postgres/Redis/Key Value but **not** MongoDB,
+  so an external host is required. Also add `0.0.0.0/0` to Atlas
+  *Network Access → IP Access List*, since Render's outbound IPs are not static.
+* **`injected env (0) from .env` in the Render log** — normal and harmless.
+  Render injects variables from its own environment; no `.env` file ships in the
+  image.
+* **Public site renders blank while the API is up** — check the browser
+  Network tab. A non-JSON or error response means `VITE_API_BASE_URL` is wrong
+  or the CORS origin does not match `CLIENT_URL`.
 * **Dashboard shows 0 records** — run `npm run seed`; the API reads
   `MONGODB_URI`, the seeder reads the same file.
 * **401 immediately after login** — the JWT secrets in `backend/.env` changed

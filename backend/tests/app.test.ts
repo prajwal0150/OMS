@@ -45,6 +45,30 @@ describe('CLIENT_URL parsing', () => {
   });
 });
 
+describe('list endpoints answer with a populated data array', () => {
+  // The homepage crashed in production with "Cannot read properties of
+  // undefined (reading 'length')" because unwrapList() passes response.data.data
+  // straight through: on the error envelope { success:false, message, errors }
+  // the data key is absent, so items became undefined and every .length read
+  // in HomePage / UnitsPanel / AnnouncementsPanel threw. A 404 route hits the
+  // same envelope through notFoundHandler, so a wrong prefix is indistinguishable
+  // from a crash. These tests pin the contract from both ends.
+  it('returns a data array even when the list is empty', async () => {
+    const res = await request(createApp()).get('/api/units/public?limit=5');
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.meta.pagination).toBeDefined();
+  });
+
+  it('omits data on error envelopes, matching what the client must tolerate', async () => {
+    const res = await request(createApp()).get('/api/does-not-exist');
+    expect(res.status).toBe(404);
+    expect(res.body.success).toBe(false);
+    // Documented on purpose: this is the shape that crashed the homepage.
+    expect(res.body.data).toBeUndefined();
+  });
+});
+
 describe('deployment endpoints', () => {
   it('serves /health without authentication so Render can probe it', async () => {
     const res = await request(createApp()).get('/health');
