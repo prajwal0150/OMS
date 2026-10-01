@@ -3,6 +3,9 @@ import { env } from './env';
 
 let connection: typeof mongoose | null = null;
 
+/** Ceiling for a single backoff wait, so a large retryDelayMs cannot stall a deploy. */
+const MAX_RETRY_DELAY_MS = 60000;
+
 /**
  * Classifies a connection failure so the operator sees a cause rather than a
  * MongoDB driver stack trace. Kept separate from connectDatabase so it can be
@@ -11,37 +14,59 @@ let connection: typeof mongoose | null = null;
 export const describeConnectionError = (error: unknown): string => {
   const err = error as { code?: number | string; codeName?: string; message?: string };
   const message = err?.message ?? String(error);
+  // MongooseServerSelectionError wraps a driver TopologyDescription. The
+  // nested reason names the topology state, which distinguishes "cannot reach
+  // the cluster at all" from "reached it, credentials wrong".
+  const nested = (err as { reason?: { type?: string } } | null)?.reason?.type ?? '';
+  const details = [message, nested].filter(Boolean).join(' | ');
 
-  if (err?.code === 8000 || /bad auth/i.test(message)) {
+  if (err?.code === 8000 || /bad auth/i.test(details)) {
     return (
       'MongoDB rejected the credentials (AtlasError 8000: "bad auth"). The cluster was ' +
       'reached, so the host, URI format and network allowlist are all correct. In Atlas > ' +
       'Database Access, confirm the username matches exactly (a typo fails identically to a ' +
       'wrong password), the password is the current one rather than one already rotated out, ' +
-      'and the user is not suspended and holds readWriteAnyDatabase on this cluster.'
+      'and the user is not suspended. Any role that can write hps_oms is enough - ' +
+      'readWrite, readWriteAnyDatabase and atlasAdmin@admin all work, so do not spend time ' +
+      'on permissions when Atlas reported "bad auth" rather than "not authorized". ' +
+      'Note that with more than one user present it is easy to hold the one-time password ' +
+      'of a different user than the one in the URI; delete the extra users and create one ' +
+      'fresh user with a password you record immediately.'
     );
   }
 
-  if (/ENOTFOUND|EAI_AGAIN/.test(message)) {
+  // Server selection failure with no primary. Atlas resolved the SRV record and
+  // the driver opened sockets, but no replica set member completed a handshake:
+  // commonWireVersion stays 0 and logicalSessionTimeoutMinutes is null. That
+  // points at the network or at a cluster that is not running, never at
+  // credentials, so say so plainly rather than reporting an unknown error.
+  if (/ReplicaSetNoPrimary|Could not connect to any servers|Server selection/i.test(details)) {
+    return (
+      'Atlas resolved the cluster but no replica set member answered the handshake ' +
+      '(no primary). The credentials are fine and the URI is fine; this is reachability. ' +
+      'Two causes account for nearly all of these. First, the Render container IP is not ' +
+      'in the allowlist: in Atlas open Network Access > IP Access List and add 0.0.0.0/0 ' +
+      '(Render outbound IPs are dynamic, so a static allowlist cannot work). Second, the ' +
+      'cluster is paused or still provisioning: free M0 clusters auto-pause when idle and ' +
+      'can take a minute to resume, and a brand new cluster is not ready for connections ' +
+      'for a few minutes after creation. Open the cluster in Atlas and confirm it shows ' +
+      'Active, then deploy again. Startup retries for roughly five minutes, which usually ' +
+      'covers a resuming or newly provisioned cluster, so wait for the cluster to reach ' +
+      'Active before redeploying rather than redeploying immediately.'
+    );
+  }
+
+  if (/ENOTFOUND|EAI_AGAIN/.test(details)) {
     return (
       'The cluster hostname did not resolve. Check for a typo in MONGODB_URI and that the ' +
       'Atlas cluster has not been deleted.'
     );
   }
 
-  if (/ECONNREFUSED/.test(message)) {
+  if (/ECONNREFUSED/.test(details)) {
     return (
       'The connection was refused. A mongodb:// host with no server, or a mongodb+srv URI ' +
       'pointing at localhost, produces this.'
-    );
-  }
-
-  if (/timed out|Server selection/i.test(message)) {
-    return (
-      'The cluster did not answer within serverSelectionTimeoutMS. In Atlas > Network ' +
-      'Access > IP Access List, allow Render outbound traffic (0.0.0.0/0 unless a static ' +
-      'outbound IP is configured), and confirm the cluster is not paused. Free M0 clusters ' +
-      'auto-pause when idle and can take up to a minute to resume.'
     );
   }
 
@@ -90,7 +115,11 @@ export const connectDatabase = async (
       connection = null;
 
       if (attempt < retries) {
-        const wait = retryDelayMs * (attempt + 1);
+        // Exponential backoff, capped. Linear growth front-loads its waits and
+        // burns most of the window early, which is backwards for a cluster
+        // that is still coming up: the later attempts are the ones likely to
+        // succeed, so they need the most time to pay off.
+        const wait = Math.min(retryDelayMs * 2 ** attempt, MAX_RETRY_DELAY_MS);
         // eslint-disable-next-line no-console
         console.warn(
           `[database] connection attempt ${attempt + 1}/${retries + 1} failed, retrying in ${wait}ms`,

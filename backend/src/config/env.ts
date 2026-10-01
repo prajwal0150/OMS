@@ -20,6 +20,14 @@ const envSchema = z.object({
 
   CLIENT_URL: z.string().default('http://localhost:5173'),
 
+  // Startup connection retries. Defaults are tuned for a hosted Atlas cluster:
+  // a brand new cluster can take several minutes to become writable, and a free
+  // M0 pauses when idle and takes about a minute to resume. The default window
+  // is roughly five minutes, which covers both. Locally these stay at 0 so a
+  // bad URI fails immediately instead of appearing to hang.
+  DB_CONNECT_RETRIES: z.coerce.number().int().min(0).max(20).default(5),
+  DB_CONNECT_RETRY_DELAY_MS: z.coerce.number().int().min(0).max(60000).default(15000),
+
   SUPER_ADMIN_EMAIL: z.string().email().optional(),
   SUPER_ADMIN_PASSWORD: z.string().min(8).optional(),
   SUPER_ADMIN_FIRST_NAME: z.string().default('Super'),
@@ -60,6 +68,26 @@ if (raw.NODE_ENV === 'production' && /^mongodb(\+srv)?:\/\/(localhost|127\.0\.0\
     'MONGODB_URI points at localhost while NODE_ENV=production.\n' +
       'This host has no local MongoDB; the API cannot start. Set MONGODB_URI to a\n' +
       'hosted cluster such as MongoDB Atlas:\n' +
+      '  mongodb+srv://<user>:<password>@<cluster>.mongodb.net/hps_oms?retryWrites=true&w=majority',
+  );
+  process.exit(1);
+}
+
+// A URI with no path component connects to the "test" database. A deploy once
+// used ...mongodb.net/?appName=Cluster0, which connected successfully while
+// silently pointing every query at "test". Collections were created there, the
+// dashboard looked empty because it displayed hps_oms, and the site showed no
+// data, with no error anywhere to explain why. A missing database name is
+// therefore a startup error, not a default.
+const mongoPath = new URL(
+  (raw.MONGODB_URI as string).replace('mongodb+srv://', 'mongodb://'),
+).pathname;
+
+if (!mongoPath.replace('/', '')) {
+  // eslint-disable-next-line no-console
+  console.error(
+    'MONGODB_URI has no database name, so every query would target "test".\n' +
+      'Add /hps_oms after the cluster hostname:\n' +
       '  mongodb+srv://<user>:<password>@<cluster>.mongodb.net/hps_oms?retryWrites=true&w=majority',
   );
   process.exit(1);

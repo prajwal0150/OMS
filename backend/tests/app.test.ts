@@ -132,6 +132,8 @@ describe('hosted-deploy MongoDB guard', () => {
     expect(env.MONGODB_URI).toMatch(/^mongodb:\/\/127\.0\.0\.1/);
     expect(env.isProduction).toBe(false);
   });
+});
+
 
 describe('connection failure diagnostics', () => {
   // A Render deploy that fails with "bad auth : Authentication failed" and one
@@ -150,6 +152,11 @@ describe('connection failure diagnostics', () => {
     // The whole point: it must tell the operator what is NOT broken, so they
     // stop re-checking the allowlist and the hostname.
     expect(message).toMatch(/allowlist/i);
+    // "bad auth" is an authentication failure, never an authorization one. Two
+    // users with atlasAdmin@admin were checked at length before it was clear
+    // that the role was never the problem, so the message rules that out.
+    expect(message).toMatch(/atlasAdmin@admin all work/);
+    expect(message).toMatch(/not authorized/);
   });
 
   it('also recognises bad auth from the message when no code is attached', () => {
@@ -169,6 +176,83 @@ describe('connection failure diagnostics', () => {
       /did not resolve/i,
     );
   });
+});
+
+describe('MONGODB_URI database name', () => {
+  // A hosted deploy once used "mongodb+srv://user:pass@cluster.mongodb.net/?appName=Cluster0".
+  // That connects cleanly and every query lands in "test", so the app appears to
+  // work while the hps_oms database stays empty and the site renders no data. A
+  // URI with no path segment must be a configuration error rather than a silent
+  // default, exactly like the localhost guard above, and env.ts now exits on it.
+  const hasDatabaseName = (uri: string): boolean =>
+    new URL(uri.replace('mongodb+srv://', 'mongodb://')).pathname.replace('/', '') !== '';
+
+  it('rejects a URI that would silently target the "test" database', () => {
+    expect(hasDatabaseName('mongodb+srv://u:p@cluster.mongodb.net/?appName=Cluster0')).toBe(false);
+    expect(hasDatabaseName('mongodb://u:p@cluster.mongodb.net/')).toBe(false);
+    expect(hasDatabaseName('mongodb://u:p@cluster.mongodb.net')).toBe(false);
+  });
+
+  it('accepts a URI that names a database', () => {
+    expect(hasDatabaseName('mongodb+srv://u:p@cluster.mongodb.net/hps_oms?retryWrites=true')).toBe(
+      true,
+    );
+    expect(hasDatabaseName('mongodb://localhost:27017/hps_oms')).toBe(true);
+  });
+
+  it('does not fire for the local test URI, so the suite still loads env.ts', () => {
+    expect(hasDatabaseName(env.MONGODB_URI)).toBe(true);
+  });
+
+});
+
+describe('connection failure diagnostics', () => {
+  it('classifies a no-primary topology failure as reachability, not credentials', () => {
+    // The exact shape Render produced after the credentials were fixed:
+    // MongooseServerSelectionError with a nested TopologyDescription. The old
+    // classifier only matched on the message text, missed this entirely, and
+    // reported "Unexpected connection failure" - which is the least helpful
+    // possible answer when the actual fix is one click in the IP Access List.
+    const message = describeConnectionError({
+      name: 'MongooseServerSelectionError',
+      message:
+        'Could not connect to any servers in your MongoDB Atlas cluster. One common reason ' +
+        'is that you are trying to access the database from an IP that is not whitelisted.',
+      code: undefined,
+      reason: {
+        type: 'ReplicaSetNoPrimary',
+        setName: 'atlas-vbu888-shard-0',
+        commonWireVersion: 0,
+        logicalSessionTimeoutMinutes: null,
+      },
+    });
+
+    expect(message).toMatch(/IP Access List/);
+    expect(message).toMatch(/0\.0\.0\.0\/0/);
+    expect(message).toMatch(/paused|provisioning/i);
+    // The critical distinction: this must NOT send the operator to Database
+    // Access, because the credentials are already correct at this point.
+    expect(message).not.toMatch(/Database Access/);
+    expect(message).not.toMatch(/credentials are wrong/);
+  });
+
+  it('recognises a no-primary failure that carries only the message', () => {
+    // No nested reason: the classifier must still work off the message alone.
+    expect(
+      describeConnectionError(new Error('Could not connect to any servers in your cluster')),
+    ).toMatch(/IP Access List/);
+  });
+
+  it('keeps the credential diagnosis for a real 8000', () => {
+    // Guard against the two branches overlapping: 8000 must not be swallowed by
+    // the broader "cannot connect to any servers" match above.
+    const message = describeConnectionError({
+      code: 8000,
+      message: 'bad auth : Authentication failed.',
+    });
+    expect(message).toMatch(/credentials/i);
+    expect(message).toMatch(/Database Access/);
+  });
 
   it('points a timeout at the IP allowlist and a paused cluster', () => {
     // The Atlas M0 case: the cluster auto-pauses when idle and can take up to a
@@ -182,5 +266,4 @@ describe('connection failure diagnostics', () => {
     expect(describeConnectionError(new Error('something odd'))).toMatch(/Unexpected/i);
     expect(describeConnectionError(undefined)).toMatch(/Unexpected/i);
   });
-});
 });

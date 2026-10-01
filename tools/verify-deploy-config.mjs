@@ -81,6 +81,67 @@ try {
   bad(`frontend/.env.example -> ${e.message}`);
 }
 
+// ---- live deployment probe (opt-in) ----
+// Every check above reads config files, so all of them can pass while the
+// deployed sites are still broken. In this project the live Netlify build
+// carried a relative "/api" and the Render hostname 404'd, and the whole
+// verifier still reported green. Pass --live (plus optionally the two hostnames)
+// to check what is actually being served.
+//
+//   node tools/verify-deploy-config.mjs --live
+//   node tools/verify-deploy-config.mjs --live --api=https://x.onrender.com --site=https://y.netlify.app
+if (process.argv.includes('--live')) {
+  const flag = (name) => {
+    const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
+    return hit ? hit.slice(name.length + 3) : undefined;
+  };
+  const api = flag('api');
+  const site = flag('site');
+  const netlify = site ?? 'https://heavenlyniravanapathsunsari.netlify.app';
+
+  if (api) {
+    try {
+      const res = await fetch(`${api.replace(/\/$/, '')}/health`);
+      if (res.status === 404) {
+        bad(`live API ${api}/health -> 404; the service is not deployed at that hostname`);
+      } else {
+        const body = await res.json();
+        if (body.database !== 'connected') {
+          bad(`live API ${api}/health -> database=${body.database}; Atlas is not connected`);
+        } else {
+          ok(`live API ${api}/health -> database=connected`);
+        }
+      }
+    } catch (e) {
+      bad(`live API ${api}/health -> unreachable (${e.message})`);
+    }
+  } else {
+    bad('live API hostname not supplied; pass --api=https://<service>.onrender.com');
+  }
+
+  try {
+    const html = await (await fetch(netlify)).text();
+    const chunk = html.match(/href="(\/assets\/ui-[^"]+\.js)"/) ?? html.match(/src="(\/assets\/index-[^"]+\.js)"/);
+    if (!chunk) throw new Error('could not locate the built bundle in index.html');
+    const js = await (await fetch(new URL(chunk[1], netlify))).text();
+    // apiClient compiles to `_r=\`<base>\``; the relative fallback means
+    // VITE_API_BASE_URL was absent from the build environment.
+    const match = js.match(/_r=`([^`]*)`/);
+    const base = match ? match[1] : null;
+    if (base && base.startsWith('http')) {
+      ok(`live site points at the API (${base})`);
+    } else {
+      bad(
+        `live site uses ${base ?? 'an unknown base URL'} instead of an absolute API origin; ` +
+          'set VITE_API_BASE_URL in Netlify and redeploy',
+      );
+    }
+  } catch (e) {
+    bad(`live site ${netlify} -> ${e.message}`);
+  }
+}
+
+
 // ---- every relative asset render must be resolved ----
 // Scans all of frontend/src instead of a hardcoded list, so a future page
 // cannot silently reintroduce the bug.

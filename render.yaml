@@ -77,6 +77,15 @@ services:
       - key: MONGODB_URI
         sync: false
 
+      # ---- database connection ----
+      # A brand new Atlas cluster takes a few minutes before it accepts writes,
+      # and a free M0 resumes after a pause. Retrying for about five minutes
+      # means the deploy survives that instead of crash-looping.
+      - key: DB_CONNECT_RETRIES
+        value: 5
+      - key: DB_CONNECT_RETRY_DELAY_MS
+        value: 15000
+
       # ---- auth (secret) ----
       - key: JWT_ACCESS_SECRET
         generateValue: true
