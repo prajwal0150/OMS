@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { createApp, resolveAllowedOrigins } from '../src/app';
 import { env } from '../src/config/env';
-import { isDatabaseConnected } from '../src/config/database';
+import { describeConnectionError, isDatabaseConnected } from '../src/config/database';
 
 describe('resolveAllowedOrigins', () => {
   it('accepts every origin in a comma separated CLIENT_URL list', () => {
@@ -132,4 +132,55 @@ describe('hosted-deploy MongoDB guard', () => {
     expect(env.MONGODB_URI).toMatch(/^mongodb:\/\/127\.0\.0\.1/);
     expect(env.isProduction).toBe(false);
   });
+
+describe('connection failure diagnostics', () => {
+  // A Render deploy that fails with "bad auth : Authentication failed" and one
+  // that fails with a paused cluster look identical in a raw driver stack: both
+  // are just a rejected promise. describeConnectionError turns the code the
+  // driver already attaches into a sentence that names the next action, which
+  // is the difference between a five minute fix and a redeploy loop.
+  it('names the credential cause for AtlasError 8000', () => {
+    const message = describeConnectionError({
+      code: 8000,
+      codeName: 'AtlasError',
+      message: 'bad auth : Authentication failed.',
+    });
+    expect(message).toMatch(/credentials/i);
+    expect(message).toMatch(/Database Access/);
+    // The whole point: it must tell the operator what is NOT broken, so they
+    // stop re-checking the allowlist and the hostname.
+    expect(message).toMatch(/allowlist/i);
+  });
+
+  it('also recognises bad auth from the message when no code is attached', () => {
+    expect(describeConnectionError(new Error('bad auth : Authentication failed.'))).toMatch(
+      /credentials/i,
+    );
+  });
+
+  it('points a refused connection at a missing server or localhost', () => {
+    const message = describeConnectionError(new Error('connect ECONNREFUSED 127.0.0.1:27017'));
+    expect(message).toMatch(/refused/i);
+    expect(message).toMatch(/localhost/i);
+  });
+
+  it('points a DNS failure at a bad hostname', () => {
+    expect(describeConnectionError(new Error('getaddrinfo ENOTFOUND cluster0.abcde'))).toMatch(
+      /did not resolve/i,
+    );
+  });
+
+  it('points a timeout at the IP allowlist and a paused cluster', () => {
+    // The Atlas M0 case: the cluster auto-pauses when idle and can take up to a
+    // minute to resume, which is why startup now retries instead of exiting.
+    const message = describeConnectionError(new Error('Server selection timed out after 10000 ms'));
+    expect(message).toMatch(/IP Access List/);
+    expect(message).toMatch(/paused/i);
+  });
+
+  it('falls back to a generic message rather than throwing on an odd error', () => {
+    expect(describeConnectionError(new Error('something odd'))).toMatch(/Unexpected/i);
+    expect(describeConnectionError(undefined)).toMatch(/Unexpected/i);
+  });
+});
 });

@@ -52,7 +52,22 @@ try {
   if (!/to\s*=\s*"\/index\.html"/.test(raw)) throw new Error('redirect target is not /index.html');
   if (!/publish\s*=\s*"dist"/.test(raw)) throw new Error('publish is not dist');
   if (!/base\s*=\s*"frontend"/.test(raw)) throw new Error('base is not frontend');
+  // A client built without VITE_API_BASE_URL falls back to the relative "/api",
+  // so every call hits the Netlify origin and the catch-all below returns
+  // index.html with HTTP 200. The client parses HTML as JSON, unwrapList()
+  // yields [], and the whole site looks "up but empty" - indistinguishable from
+  // an unseeded database. This rule turns that into a 404. It only helps if it
+  // sits ABOVE the catch-all, since Netlify stops at the first match, so the
+  // ordering is checked as well as the presence.
+  const apiGuard = raw.indexOf('from = "/api/*"');
+  if (apiGuard === -1) throw new Error('no /api/* guard, so a missing VITE_API_BASE_URL fails silently');
+  const catchAll = raw.indexOf('from = "/*"');
+  if (catchAll === -1) throw new Error('no catch-all redirect');
+  if (apiGuard > catchAll) {
+    throw new Error('the /api/* guard is below the "/*" catch-all and will never match');
+  }
   ok('netlify.toml has SPA redirect, publish=dist, base=frontend');
+  ok('netlify.toml rejects /api/* above the catch-all so a missing VITE_API_BASE_URL 404s');
 } catch (e) {
   bad(`netlify.toml -> ${e.message}`);
 }

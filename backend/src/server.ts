@@ -8,6 +8,14 @@ const server = http.createServer(app);
 
 const start = async () => {
   try {
+    // Retries are for production only. Locally and in tests a bad URI should
+    // fail fast; on a hosted Atlas cluster a paused or failing-over node is
+    // normal and recoverable, so retry rather than crash-loop the deploy.
+    await connectDatabase(env.MONGODB_URI, {
+      retries: env.isProduction ? 4 : 0,
+      retryDelayMs: 5000,
+    });
+
     await connectDatabase();
 
     server.listen(env.PORT, () => {
