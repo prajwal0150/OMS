@@ -36,6 +36,17 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((value) => value === 'true'),
+  // Opt-in password reset for an already-seeded Super Admin. The seed used to
+  // return the existing Super Admin before it ever looked at
+  // SUPER_ADMIN_PASSWORD, so editing the password in .env and re-running the
+  // seed did nothing and sign-in kept failing with "Invalid email or password".
+  // This is deliberately off by default: once the operator has completed the
+  // forced password change, an ordinary re-run of the seed must not silently
+  // overwrite the password they chose.
+  RESET_SUPER_ADMIN_PASSWORD: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
 
   STORAGE_PROVIDER: z.enum(['local', 'cloudinary', 's3']).default('local'),
   UPLOAD_DIR: z.string().default('uploads'),

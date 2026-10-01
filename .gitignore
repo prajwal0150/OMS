@@ -9,6 +9,12 @@ build/
 .env
 .env.local
 .env.*.local
+# dotenvx writes encrypted key material next to the .env file under its own
+# name. It is a secret and was committed once already (e09f417), so it needs an
+# explicit rule: the patterns above match ".env" and ".env.<something>.local"
+# but not ".env.keys".
+.env.keys
+.env.*.keys
 
 # Logs and diagnostics
 *.log

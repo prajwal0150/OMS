@@ -40,6 +40,7 @@ import { EventModel } from '../src/modules/events/event.model';
 import { ContentModel } from '../src/modules/content/content.model';
 import { AnnouncementModel } from '../src/modules/announcements/announcement.model';
 import { hashPassword } from '../src/utils/password';
+import { seedSuperAdmin } from './seedSuperAdmin';
 
 /* eslint-disable no-console */
 
@@ -98,34 +99,6 @@ const seedOrganization = async () => {
   });
 };
 
-const seedSuperAdmin = async () => {
-  // Credentials come from the environment only — never hardcoded. A Super Admin is
-  // provisioned once, and the operator is forced to set their own password on first login.
-  const email = (env.SUPER_ADMIN_EMAIL ?? '').trim().toLowerCase();
-  const password = env.SUPER_ADMIN_PASSWORD ?? '';
-
-  const existingSuperAdmin = await UserModel.findOne({ role: ROLE_NAMES.SUPER_ADMIN });
-  if (existingSuperAdmin) return existingSuperAdmin;
-
-  if (!email || !password) {
-    throw new Error(
-      'No Super Admin exists yet. Set SUPER_ADMIN_EMAIL and SUPER_ADMIN_PASSWORD in backend/.env, then run the seed again.',
-    );
-  }
-
-  return UserModel.create({
-    firstName: env.SUPER_ADMIN_FIRST_NAME,
-    lastName: env.SUPER_ADMIN_LAST_NAME,
-    email,
-    passwordHash: await hashPassword(password),
-    role: ROLE_NAMES.SUPER_ADMIN,
-    permissions: [],
-    status: 'ACTIVE',
-    // The seeded account must set its own password on first sign-in.
-    forcePasswordChange: true,
-    isSystemAccount: true,
-  });
-};
 
 interface DemoContext {
   districtId: string;
@@ -425,8 +398,28 @@ const run = async () => {
     const org = await seedOrganization();
     console.log(`[seed] organization: ${org.name}`);
 
-    const superAdmin = await seedSuperAdmin();
-    console.log(`[seed] super admin: ${superAdmin.email}`);
+    const superAdminOutcome = await seedSuperAdmin({
+      email: env.SUPER_ADMIN_EMAIL ?? '',
+      password: env.SUPER_ADMIN_PASSWORD ?? '',
+      firstName: env.SUPER_ADMIN_FIRST_NAME,
+      lastName: env.SUPER_ADMIN_LAST_NAME,
+      resetPassword: env.RESET_SUPER_ADMIN_PASSWORD,
+    });
+
+    // The outcome matters to the operator: "unchanged" is the case that made
+    // this confusing for so long, because the seed reported success while
+    // leaving the stored password exactly as it was.
+    if (superAdminOutcome.action === 'unchanged') {
+      console.log(
+        `[seed] super admin already exists (${superAdminOutcome.email}) — password left unchanged. ` +
+          'To set a new one, set RESET_SUPER_ADMIN_PASSWORD=true and re-run.',
+      );
+    } else if (superAdminOutcome.action === 'reset') {
+      console.log(`[seed] super admin password reset: ${superAdminOutcome.email}`);
+    } else {
+      console.log(`[seed] super admin: ${superAdminOutcome.email}`);
+    }
+    const superAdmin = superAdminOutcome.user;
 
     // Structural seed — always runs so the platform is usable straight after setup.
     const context = await seedStructure(String(org._id), String(superAdmin._id));
