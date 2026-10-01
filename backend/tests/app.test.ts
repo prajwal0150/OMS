@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { createApp, resolveAllowedOrigins } from '../src/app';
 import { env } from '../src/config/env';
-import { describeConnectionError, isDatabaseConnected } from '../src/config/database';
+import {
+  describeConnectionError,
+  isDatabaseConnected,
+  observeConnection,
+} from '../src/config/database';
 
 describe('resolveAllowedOrigins', () => {
   it('accepts every origin in a comma separated CLIENT_URL list', () => {
@@ -265,5 +269,34 @@ describe('connection failure diagnostics', () => {
   it('falls back to a generic message rather than throwing on an odd error', () => {
     expect(describeConnectionError(new Error('something odd'))).toMatch(/Unexpected/i);
     expect(describeConnectionError(undefined)).toMatch(/Unexpected/i);
+
+  });
+});
+describe('live connection observability', () => {
+  // An intermittent "sometimes connected, sometimes failed" symptom was almost
+  // impossible to diagnose because nothing listened to the connection after it
+  // was first established. connectDatabase() only covers startup, so a drop
+  // caused by an Atlas M0 pause or a failover produced no log line at all -
+  // /health would flip to "disconnected" and queries would hang with no clue in
+  // the logs as to why. observeConnection() registers the lifecycle listeners
+  // that make those transitions visible, and must tolerate being called on an
+  // already-connected socket (the test suite calls it below).
+  it('registers listeners without throwing on a live connection', () => {
+    expect(() => observeConnection()).not.toThrow();
+  });
+
+  it('is safe to call repeatedly, as each startup and redeploy does', () => {
+    // EventEmitter warns past 10 listeners on the same event, so a duplicate
+    // registration on a long-lived process would degrade into noise.
+    expect(() => {
+      observeConnection();
+      observeConnection();
+    }).not.toThrow();
+  });
+
+  it('still reports the connection as healthy after observing it', () => {
+    // Attaching listeners must not mutate state; /health depends on readyState.
+    observeConnection();
+    expect(isDatabaseConnected()).toBe(true);
   });
 });

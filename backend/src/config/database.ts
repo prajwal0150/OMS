@@ -7,6 +7,43 @@ let connection: typeof mongoose | null = null;
 const MAX_RETRY_DELAY_MS = 60000;
 
 /**
+ * Observes an already-established connection.
+ *
+ * connectDatabase() only covers the FIRST connection. Without these listeners a
+ * connection that drops later - an Atlas M0 waking from a pause, a brief
+ * network partition, a shared-node failover - is completely invisible: /health
+ * silently flips to "disconnected", every query hangs until it times out, and
+ * the logs contain nothing at all to explain it. That silence is what makes an
+ * intermittent failure so hard to chase. Logging the transitions is the minimum
+ * needed to tell "the cluster paused" apart from "the app is broken".
+ */
+export const observeConnection = (): void => {
+  const connection = mongoose.connection;
+
+  connection.on('connected', () => {
+    // eslint-disable-next-line no-console
+    console.log(`[database] state -> connected (${connection.name})`);
+  });
+
+  connection.on('disconnected', () => {
+    // A transient drop is normal on a paused or failing-over cluster and the
+    // driver reconnects on its own, so this is a warning rather than an error.
+    // eslint-disable-next-line no-console
+    console.warn('[database] state -> disconnected; the driver will attempt to reconnect');
+  });
+
+  connection.on('reconnected', () => {
+    // eslint-disable-next-line no-console
+    console.log('[database] state -> connected (reconnected)');
+  });
+
+  connection.on('error', (error: Error) => {
+    // eslint-disable-next-line no-console
+    console.error('[database] connection error:', describeConnectionError(error));
+  });
+};
+
+/**
  * Classifies a connection failure so the operator sees a cause rather than a
  * MongoDB driver stack trace. Kept separate from connectDatabase so it can be
  * unit tested without touching the network.
@@ -103,7 +140,19 @@ export const connectDatabase = async (
       connection = await mongoose.connect(uri, {
         serverSelectionTimeoutMS: 10000,
         maxPoolSize: 20,
+        // --- settings that directly reduce intermittent failures ---
+        // An idle pooled socket held across an Atlas M0 pause is dead on arrival:
+        // the node was reclaimed while the socket sat unused, so the next query
+        // fails on a connection that "looked" healthy. Capping idle time keeps
+        // the pool from handing out stale sockets. 30s sits well under the pause
+        // threshold.
+        maxIdleTimeMS: 30000,
+        // Fail fast if a socket cannot be established, rather than leaving the
+        // request pending for the default 30s.
+        connectTimeoutMS: 10000,
       });
+
+      observeConnection();
 
       // eslint-disable-next-line no-console
       console.log(`[database] connected -> ${mongoose.connection.name}`);
