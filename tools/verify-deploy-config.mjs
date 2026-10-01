@@ -165,6 +165,39 @@ try {
   bad(`unwrapList guard -> ${e.message}`);
 }
 
+// ---- /health must be able to explain a dead database ----
+// The MONGODB_URI deploy failure was hard to read because /health returned a
+// bare "ok": the process was reachable while Mongo was not. `database` is the
+// field that distinguishes "API is up" from "API can serve data".
+try {
+  const app = readFileSync('backend/src/app.ts', 'utf8');
+  if (!/database:\s*isDatabaseConnected\(\)/.test(app)) {
+    throw new Error('/health does not report database connectivity');
+  }
+  if (!/isDatabaseConnected/.test(readFileSync('backend/src/config/database.ts', 'utf8'))) {
+    throw new Error('isDatabaseConnected is missing from database.ts');
+  }
+  ok('/health reports database connectivity (isDatabaseConnected is wired in)');
+} catch (e) {
+  bad(`health check diagnostics -> ${e.message}`);
+}
+
+// ---- production must reject a localhost MONGODB_URI ----
+// Guards the exact deploy failure: MONGODB_URI left at mongodb://localhost,
+// which Render refuses with ECONNREFUSED 127.0.0.1:27017 and exit 1.
+try {
+  const envSrc = readFileSync('backend/src/config/env.ts', 'utf8');
+  if (!/NODE_ENV === 'production'/.test(envSrc)) {
+    throw new Error('the localhost MongoDB guard is not scoped to production');
+  }
+  if (!/\(localhost\|127\\\.0\\\.0\\\.1\)/.test(envSrc) && !/\(localhost\|127\./.test(envSrc)) {
+    throw new Error('the localhost MongoDB guard does not match localhost/127.0.0.1');
+  }
+  ok('env.ts rejects a localhost MONGODB_URI in production');
+} catch (e) {
+  bad(`localhost MongoDB guard -> ${e.message}`);
+}
+
 console.log(report.join('\n'));
 // Non-zero exit lets CI or a pre-deploy hook gate on this check.
 if (report.some((line) => line.startsWith('FAIL'))) process.exitCode = 1;

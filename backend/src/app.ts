@@ -4,6 +4,7 @@ import cors from 'cors';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env';
+import { isDatabaseConnected } from './config/database';
 import { requestContext } from './middleware/requestContext';
 import { apiLimiter } from './middleware/rateLimit';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
@@ -55,10 +56,17 @@ export const createApp = (): express.Application => {
   app.use('/uploads', express.static(env.uploadDirAbsolute));
 
   // Health check endpoint (exempt from rate limit)
+  //
+  // This stays 200 as long as the process is serving, even if Mongo is down, so
+  // a brief Atlas blip does not make Render restart-loop the service. The
+  // `database` field is the actual diagnostic: when the deploy fails to come up
+  // because MONGODB_URI is unreachable, this endpoint is what shows
+  // "disconnected" instead of a bare "ok" that hides the real cause.
   app.get('/health', (_req, res) => {
     res.status(200).json({
       status: 'ok',
       service: 'hps-oms-backend',
+      database: isDatabaseConnected() ? 'connected' : 'disconnected',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
     });
