@@ -58,7 +58,7 @@ export function LatestNewsPanel({ items, loading, error, onRetry }: LatestNewsPa
       <PanelHeader
         icon={<Newspaper className="h-[18px] w-[18px]" />}
         title="Latest News"
-        viewAllTo="/content"
+        viewAllTo="/activities"
       />
       <div className="p-4">
         {error ? (

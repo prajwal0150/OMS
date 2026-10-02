@@ -32,9 +32,24 @@
   }
 
   body {
-    @apply bg-app-bg text-text font-sans antialiased;
+    
     font-size: 14px;
     line-height: 1.45;
+  
+  
+  
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Display",
+    "SF Pro Text",
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+
+  
   }
 
   /* Visible, consistent keyboard focus across the whole application. */

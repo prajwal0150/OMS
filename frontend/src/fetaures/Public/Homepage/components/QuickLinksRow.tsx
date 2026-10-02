@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, CalendarDays, MapPin, Newspaper, UsersRound, type LucideIcon } from 'lucide-react';
+import { ArrowRight, CalendarDays, MapPin, UsersRound, type LucideIcon } from 'lucide-react';
 
 interface QuickLink {
   label: string;
@@ -25,25 +25,18 @@ const LINKS: QuickLink[] = [
     to: '/district',
   },
   {
-    label: 'Communities',
-    desc: 'Parents, Women and Youth communities',
+    label: 'Units & Communities',
+    desc: 'Our units and the communities within them',
     icon: UsersRound,
     tile: 'bg-violet-50 text-violet-600',
-    to: '/communities',
+    to: '/structure',
   },
   {
-    label: 'Events',
-    desc: 'Join our upcoming events and programs',
+    label: 'Activities',
+    desc: 'Events, programs, stories and achievements',
     icon: CalendarDays,
     tile: 'bg-orange-50 text-orange-500',
-    to: '/events',
-  },
-  {
-    label: 'Latest News',
-    desc: 'Stay updated with our latest activities',
-    icon: Newspaper,
-    tile: 'bg-teal-50 text-teal-600',
-    to: '/content',
+    to: '/activities',
   },
 ];
 
@@ -52,10 +45,10 @@ export interface QuickLinksRowProps {
   unitCount?: number;
 }
 
-/** Five shortcut cards shown directly below the hero. */
+/** Four shortcut cards shown directly below the hero. */
 export function QuickLinksRow({ unitCount }: QuickLinksRowProps) {
   return (
-    <div className="mt-5 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+    <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {LINKS.map((link) => {
         const desc =
           link.label === 'District & Units' && unitCount

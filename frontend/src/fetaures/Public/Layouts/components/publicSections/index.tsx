@@ -63,6 +63,29 @@ export function PublicPageHeader({ title, description, eyebrow, actions }: Publi
   );
 }
 
+export interface PublicSectionHeadingProps {
+  icon: ReactNode;
+  title: string;
+  /** Optional total from the server, rendered next to the title. */
+  total?: number;
+}
+
+/**
+ * Titled heading for one block of a merged page (Activities, Structure).
+ * Keeps the two sections on those pages visually identical.
+ */
+export function PublicSectionHeading({ icon, title, total }: PublicSectionHeadingProps) {
+  return (
+    <div className="mb-3 flex items-center gap-2">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+        {icon}
+      </span>
+      <h2 className="text-lg font-semibold text-secondary">{title}</h2>
+      {typeof total === 'number' && <span className="text-xs text-muted">({total})</span>}
+    </div>
+  );
+}
+
 export interface PublicToolbarProps {
   search: string;
   onSearchChange: (value: string) => void;

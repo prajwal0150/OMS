@@ -1,0 +1,185 @@
+/*
+ * HOMEPAGE — MOTION & ANIMATION ONLY
+ * ---------------------------------------------------------------------------
+ * This file is intentionally limited to motion: keyframes, the continuous 3D
+ * flip, ambient loops, pointer tilt and their accessibility guards.
+ *
+ * Static presentation (layout, colour, type, spacing) stays in Tailwind
+ * utility classes inside the component, so this sheet never becomes a second
+ * styling system. Every rule here is animation plumbing.
+ *
+ * The Lovism medallion is a 3D flip card: it turns over and back on the Y axis
+ * and carries a mirrored copy on its back. The flip is capped below 90° so the
+ * mark never turns edge-on to the viewer and vanishes. `HeroSection.tsx` writes
+ * the `--tilt-x` / `--tilt-y` custom properties from the pointer position and
+ * toggles `data-anim` to park the motion when the hero scrolls out of view or
+ * the visitor asked for reduced motion.
+ * ------------------------------------------------------------------------- */
+
+/* --- Keyframes ------------------------------------------------------------ */
+
+/*
+ * The headline motion: the medallion flips.
+ *
+ * The angle is deliberately capped at 55° instead of running to a full 360°.
+ * A flat plate projects to a width of exactly `W * cos(angle)`, so at 90° and
+ * 270° it has literally zero width and disappears -- twice per revolution. A
+ * flip that stays under 90° still reads unmistakably as a flip (the mark turns
+ * to a three-quarter view and comes back) but never reaches that vanishing
+ * point, so the logo is on screen at every single frame. `alternate` sends it
+ * over and back on its own, forever, with no JS involvement.
+ */
+@keyframes hp-flip {
+  0% {
+    transform: rotateX(-4deg) rotateY(0deg);
+  }
+  100% {
+    transform: rotateX(5deg) rotateY(55deg);
+  }
+}
+
+/* Gentle vertical bob with a slight rock so the bubble feels suspended. */
+@keyframes hp-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1.2deg);
+  }
+}
+
+/* Slow rotation of the dashed halo ring. */
+@keyframes hp-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Sparkle pulse: fades, scales and turns between the two star sparkles. */
+@keyframes hp-twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.65) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15) rotate(40deg);
+  }
+}
+
+/* Handwritten tagline rocks gently back and forth. */
+@keyframes hp-sway {
+  0%,
+  100% {
+    transform: rotate(-4deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-1deg) translateY(-4px);
+  }
+}
+
+/* --- 3D flip card --------------------------------------------------------- */
+
+/*
+ * The perspective lives on the stage. Without it the Y rotation would simply
+ * squash the logo instead of turning it like a physical card.
+ */
+.hp-flip-stage {
+  perspective: 900px;
+  perspective-origin: 50% 50%;
+}
+
+/*
+ * Rotation carrier: preserves the 3D context for its faces.
+ *
+ * `alternate` plus an ease-in-out curve makes the mark swing over to 55° and
+ * ease back again, which reads as a weighty object being turned by hand. Raise
+ * `55deg` in `hp-flip` for a wider flip; keep it under 90deg or the logo will
+ * vanish at the halfway point.
+ */
+.hp-flipper {
+  transform-style: preserve-3d;
+  animation: hp-flip 4.5s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+
+/*
+ * Each face hides its own backface so the mirrored twin underneath never shows
+ * through the front one while the card is turned.
+ */
+.hp-flip-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.hp-flip-face--back {
+  transform: rotateY(180deg);
+}
+
+/* --- Ambient loops -------------------------------------------------------- */
+
+.hp-float {
+  animation: hp-float 6.5s ease-in-out infinite;
+}
+
+.hp-orbit {
+  animation: hp-orbit 28s linear infinite;
+}
+
+.hp-twinkle {
+  animation: hp-twinkle 3.2s ease-in-out infinite;
+}
+
+/* Second sparkle is offset so the two never blink in sync. */
+.hp-twinkle--delay {
+  animation-delay: -1.4s;
+}
+
+.hp-sway {
+  animation: hp-sway 7s ease-in-out infinite;
+}
+
+/*
+ * JS writes `--tilt-x` / `--tilt-y` on pointer move; the transition absorbs
+ * the jitter so the medallion glides rather than snaps after the pointer.
+ */
+.hp-tilt {
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+/* --- Run / stop controls -------------------------------------------------- */
+
+/*
+ * `data-anim="off"` is written by JS when the hero leaves the viewport or the
+ * visitor prefers reduced motion. Pausing (rather than removing the animation)
+ * keeps every element exactly where the animation left it.
+ */
+[data-anim='off'] .hp-flipper,
+[data-anim='off'] .hp-float,
+[data-anim='off'] .hp-orbit,
+[data-anim='off'] .hp-twinkle,
+[data-anim='off'] .hp-sway {
+  animation-play-state: paused;
+}
+
+/* Belt-and-braces guard that also covers the very first paint. */
+@media (prefers-reduced-motion: reduce) {
+  .hp-flipper,
+  .hp-float,
+  .hp-orbit,
+  .hp-twinkle,
+  .hp-sway {
+    animation: none;
+  }
+
+  .hp-tilt {
+    transition: none;
+  }
+}

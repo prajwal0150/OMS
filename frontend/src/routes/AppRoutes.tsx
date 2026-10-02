@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { LoadingState } from '../components/ui';
 import {
   ProtectedRoute,
@@ -30,13 +30,15 @@ import { ROLE } from '../types';
 const HomePage = lazy(() => import('../fetaures/Public/Homepage/pages/HomePage'));
 const AboutPage = lazy(() => import('../fetaures/Public/AboutUs/pages/AboutPage'));
 const DistrictPage = lazy(() => import('../fetaures/Public/District/pages/DistrictPage'));
-const PublicUnitsPage = lazy(() => import('../fetaures/Public/Units/pages/UnitsPage'));
-const PublicCommunitiesPage = lazy(() => import('../fetaures/Public/Communities/pages/CommunitiesPage'));
-const PublicEventsPage = lazy(() => import('../fetaures/Public/Event/pages/EventsPage'));
+const PublicStructurePage = lazy(
+  () => import('../fetaures/Public/Structure/pages/StructurePage'),
+);
 const PublicAnnouncementsPage = lazy(
   () => import('../fetaures/Public/Announcements/pages/AnnouncementsPage'),
 );
-const PublicContentPage = lazy(() => import('../fetaures/Public/Content/pages/ContentListPage'));
+const PublicActivitiesPage = lazy(
+  () => import('../fetaures/Public/Activities/pages/ActivitiesPage'),
+);
 const ContentDetailsPage = lazy(() => import('../fetaures/Public/Content/pages/ContentDetailsPage'));
 const GalleryPage = lazy(() => import('../fetaures/Public/Gallery/pages/GalleryPage'));
 const ContactPage = lazy(() => import('../fetaures/Public/ContactUs/pages/ContactPage'));
@@ -55,6 +57,19 @@ const MemberAnnouncementsPage = lazy(
 const MemberDocumentsPage = lazy(() => import('../fetaures/Members/Documents/pages/DocumentsPage'));
 
 const Fallback = <LoadingState label="Loading page..." />;
+
+/**
+ * `/events` + `/content` and `/units` + `/communities` were each merged into a
+ * single page. Old links (bookmarks, the homepage, notification emails) still
+ * point at the old paths, so they redirect. The query string is carried across,
+ * otherwise the global header search would silently lose its term on the way
+ * through.
+ */
+function Redirect({ to }: { to: string }) {
+  const { search } = useLocation();
+  return <Navigate to={{ pathname: to, search }} replace />;
+}
+
 /* ------------------------------------------------------------------ *
  * Public website - no authentication required.
  * There is deliberately no /register route: accounts are provisioned by
@@ -65,12 +80,18 @@ const publicRoutes = (
     <Route index element={<HomePage />} />
     <Route path="about" element={<AboutPage />} />
     <Route path="district" element={<DistrictPage />} />
-    <Route path="units" element={<PublicUnitsPage />} />
-    <Route path="communities" element={<PublicCommunitiesPage />} />
-    <Route path="events" element={<PublicEventsPage />} />
+    <Route path="structure" element={<PublicStructurePage />} />
+    <Route path="units" element={<Redirect to="/structure" />} />
+    <Route path="communities" element={<Redirect to="/structure" />} />
+    <Route path="activities" element={<PublicActivitiesPage />} />
+    <Route path="events" element={<Redirect to="/activities" />} />
+    <Route path="content" element={<Redirect to="/activities" />} />
     <Route path="announcements" element={<PublicAnnouncementsPage />} />
-    <Route path="content" element={<PublicContentPage />} />
+    {/* Article detail pages keep their own path: the member portal, the
+        homepage panels and backend notification links all deep-link here. */}
     <Route path="content/:slug" element={<ContentDetailsPage />} />
+    {/* Gallery is no longer in the header, but the route stays so existing
+        bookmarks keep working. */}
     <Route path="gallery" element={<GalleryPage />} />
     <Route path="contact" element={<ContactPage />} />
     <Route path="*" element={<NotFoundPage />} />

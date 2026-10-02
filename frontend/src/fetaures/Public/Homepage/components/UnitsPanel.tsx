@@ -64,7 +64,7 @@ export function UnitsPanel({ items, loading, error, onRetry }: UnitsPanelProps) 
       <PanelHeader
         icon={<Building2 className="h-[18px] w-[18px]" />}
         title="Our Units"
-        viewAllTo="/units"
+        viewAllTo="/structure"
       />
       <div className="p-4">
         {error ? (
@@ -91,7 +91,7 @@ export function UnitsPanel({ items, loading, error, onRetry }: UnitsPanelProps) 
             {items.map((unit, index) => (
               <Link
                 key={unit._id}
-                to="/units"
+                to="/structure"
                 className="group overflow-hidden rounded-lg border border-line bg-white transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
               >
                 <span className="block h-20 overflow-hidden">

@@ -13,11 +13,8 @@ const LINKS = [
   { label: 'Home', to: '/' },
   { label: 'About', to: '/about' },
   { label: 'District', to: '/district' },
-  { label: 'Units', to: '/units' },
-  { label: 'Communities', to: '/communities' },
-  { label: 'Events', to: '/events' },
-  { label: 'Content', to: '/content' },
-  { label: 'Gallery', to: '/gallery' },
+  { label: 'Structure', to: '/structure' },
+  { label: 'Activities', to: '/activities' },
   { label: 'Contact', to: '/contact' },
 ];
 
@@ -28,11 +25,11 @@ export function PublicHeader() {
   const navigate = useNavigate();
   const { isAuthenticated, role } = useAuthState();
 
-  /** The mockup's search box routes into the public content list. */
+  /** The search box routes into the merged activities page (events + stories). */
   const submitSearch = (event: FormEvent) => {
     event.preventDefault();
     const trimmed = query.trim();
-    navigate(trimmed ? `/content?search=${encodeURIComponent(trimmed)}` : '/content');
+    navigate(trimmed ? `/activities?search=${encodeURIComponent(trimmed)}` : '/activities');
   };
 
   const dashboardTo = isAuthenticated ? (role === 'MEMBER' ? '/portal' : '/admin') : '/login';

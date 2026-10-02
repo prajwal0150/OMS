@@ -1,10 +1,156 @@
+import { useCallback, useEffect, useRef } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Play } from 'lucide-react';
 import { Button } from '../../../../components';
+import lovismLogo from '../../../../assets/lovism.png';
+
+/** How far the medallion follows the pointer, in degrees across half the bubble. */
+const TILT_RANGE = 18;
+
+/**
+ * Animated Lovism medallion shown on the right of the homepage hero.
+ *
+ * Structure and presentation stay in Tailwind utility classes; every moving
+ * part is driven by `styles/motion.css`. JavaScript supplies the motion: the
+ * pointer position is written into the `--tilt-x` / `--tilt-y` custom
+ * properties on every animation frame, and an IntersectionObserver plus a
+ * `prefers-reduced-motion` check drive the `data-anim` attribute that parks all
+ * animations when they are not needed.
+ */
+function LovismMark() {
+  const brandRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef(0);
+
+  const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const brand = brandRef.current;
+    // Touch already scrolls and pins, so only mouse/pen drive the tilt.
+    if (!brand || event.pointerType === 'touch') return;
+
+    const rect = brand.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
+    const offsetX = (event.clientX - rect.left) / rect.width - 0.5;
+    const offsetY = (event.clientY - rect.top) / rect.height - 0.5;
+
+    cancelAnimationFrame(frameRef.current);
+    frameRef.current = requestAnimationFrame(() => {
+      brand.style.setProperty('--tilt-y', `${(offsetX * TILT_RANGE * 2).toFixed(2)}deg`);
+      brand.style.setProperty('--tilt-x', `${(-offsetY * TILT_RANGE * 1.4).toFixed(2)}deg`);
+    });
+  }, []);
+
+  const resetTilt = useCallback(() => {
+    const brand = brandRef.current;
+    if (!brand) return;
+
+    cancelAnimationFrame(frameRef.current);
+    brand.style.setProperty('--tilt-x', '0deg');
+    brand.style.setProperty('--tilt-y', '0deg');
+  }, []);
+
+  useEffect(() => {
+    const brand = brandRef.current;
+    if (!brand) return;
+
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let inView = true;
+
+    const syncAnimationState = () => {
+      brand.dataset.anim = inView && !motionQuery.matches ? 'on' : 'off';
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        inView = entries.some((entry) => entry.isIntersecting);
+        syncAnimationState();
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(brand);
+    motionQuery.addEventListener('change', syncAnimationState);
+    syncAnimationState();
+
+    return () => {
+      observer.disconnect();
+      motionQuery.removeEventListener('change', syncAnimationState);
+      cancelAnimationFrame(frameRef.current);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={brandRef}
+      data-anim="on"
+      onPointerMove={handlePointerMove}
+      onPointerLeave={resetTilt}
+      className="flex shrink-0 items-center justify-center gap-2 self-center sm:gap-5 sm:self-auto xl:gap-7"
+    >
+      <div className="relative size-28 shrink-0 sm:size-40 md:size-48 xl:size-64">
+        {/* Dashed halo ring orbiting behind the bubble. */}
+        <span
+          aria-hidden
+          className="hp-orbit pointer-events-none absolute -inset-[14%] rounded-full border border-dashed border-white/30"
+        />
+        <span
+          aria-hidden
+          className="hp-twinkle pointer-events-none absolute top-[2%] right-[4%] size-3.5 bg-white/90 [clip-path:polygon(50%_0%,61%_39%,100%_50%,61%_61%,50%_100%,39%_61%,0%_50%,39%_39%)]"
+        />
+        <span
+          aria-hidden
+          className="hp-twinkle hp-twinkle--delay pointer-events-none absolute bottom-[6%] left-[-1%] size-2.5 bg-white/90 [clip-path:polygon(50%_0%,61%_39%,100%_50%,61%_61%,50%_100%,39%_61%,0%_50%,39%_39%)]"
+        />
+
+        {/* Glassy bubble; `hp-float` supplies the bobbing. */}
+        <div
+          className="hp-float hp-flip-stage absolute inset-0 flex items-center justify-center rounded-full bg-[radial-gradient(circle_at_34%_28%,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0.62)_38%,rgba(207,232,250,0.42)_70%,rgba(147,197,232,0.34)_100%)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.6),inset_0_0_45px_10px_rgba(255,255,255,0.5),0_20px_45px_-18px_rgba(3,22,48,0.55)]"
+        >
+          {/* Pointer tilt wraps the card so the flip composes in 3D. */}
+          <div className="hp-tilt absolute inset-0 flex items-center justify-center [transform-style:preserve-3d]">
+            <div className="hp-flipper relative aspect-[813/996] w-1/2">
+              <div className="hp-flip-face absolute inset-0 flex items-center justify-center">
+                <img
+                  src={lovismLogo}
+                  alt="Lovism"
+                  className="h-full w-full -webkit-user-drag-none object-contain [filter:drop-shadow(0_8px_16px_rgba(122,0,0,0.4))] select-none"
+                  draggable={false}
+                />
+              </div>
+              {/* Mirrored twin, so the flip still shows the mark if the angle
+                  in `hp-flip` is ever raised past 90deg. */}
+              <div
+                aria-hidden
+                className="hp-flip-face hp-flip-face--back absolute inset-0 flex items-center justify-center"
+              >
+                <img
+                  src={lovismLogo}
+                  alt=""
+                  className="h-full w-full -webkit-user-drag-none object-contain [filter:drop-shadow(0_8px_16px_rgba(122,0,0,0.4))] select-none"
+                  draggable={false}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Handwritten tagline; `hp-sway` supplies the gentle rock. */}
+      <p
+        className="hp-sway m-0 min-w-0 text-right text-2xl font-bold text-white/95 [font-family:'Caveat','Segoe_Script',cursive] [text-shadow:0_2px_14px_rgba(3,22,48,0.5)] sm:text-3xl xl:text-4xl"
+        style={{ lineHeight: 1.05 }}
+      >
+        <span className="block">Stronger</span>
+        <span className="block">Communities</span>
+        <span className="mt-[0.18em] block">Brighter</span>
+        <span className="block">Future</span>
+      </p>
+    </div>
+  );
+}
 
 /**
  * Full-bleed marketing hero: illustrated mountain landscape, dark navy overlay,
- * headline, CTAs and the hand-written tagline on the right.
+ * headline, CTAs and the animated Lovism brand mark with the tagline on the right.
  */
 export function HeroSection() {
   return (
@@ -94,7 +240,7 @@ export function HeroSection() {
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/communities">
+            <Link to="/structure">
               <Button
                 size="lg"
                 className="rounded-full px-5"
@@ -103,7 +249,7 @@ export function HeroSection() {
                 Explore Our Community
               </Button>
             </Link>
-            <Link to="/content">
+            <Link to="/activities">
               <Button
                 variant="outline"
                 size="lg"
@@ -116,13 +262,7 @@ export function HeroSection() {
           </div>
         </div>
 
-        <p
-          className="hidden shrink-0 -rotate-2 text-right text-4xl leading-tight font-semibold text-white/90 lg:block xl:text-5xl"
-          style={{ fontFamily: "'Caveat', cursive" }}
-        >
-          Stronger Communities
-          <span className="block">Brighter Future</span>
-        </p>
+        <LovismMark />
       </div>
     </section>
   );

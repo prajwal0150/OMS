@@ -13,6 +13,7 @@ import { QuickLinksRow } from '../components/QuickLinksRow';
 import { LatestNewsPanel } from '../components/LatestNewsPanel';
 import { UnitsPanel } from '../components/UnitsPanel';
 import { AnnouncementsPanel, QuickAccessPanel } from '../components/SidePanels';
+import '../styles/motion.css';
 
 /**
  * Public landing page: hero, quick links, latest news, units, sidebar with

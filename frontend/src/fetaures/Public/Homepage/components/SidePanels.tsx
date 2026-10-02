@@ -47,7 +47,7 @@ const ACCESS_LINKS: AccessLink[] = [
   {
     title: 'Download Documents',
     desc: 'Important files and resources',
-    to: '/content',
+    to: '/activities',
     icon: Download,
     tile: 'bg-orange-50 text-orange-500',
   },

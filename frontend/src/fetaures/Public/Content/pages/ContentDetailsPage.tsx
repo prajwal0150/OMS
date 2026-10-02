@@ -18,7 +18,7 @@ export function ContentDetailsPage() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-6">
         <ErrorState title="Article not found" message={error ?? undefined} onRetry={reload} />
-        <Link to="/content" className="mt-3 inline-block text-sm text-primary hover:underline">
+        <Link to="/activities" className="mt-3 inline-block text-sm text-primary hover:underline">
           Back to activities
         </Link>
       </div>
@@ -30,7 +30,7 @@ export function ContentDetailsPage() {
 
   return (
     <article className="mx-auto max-w-3xl px-4 py-6">
-      <Link to="/content" className="inline-flex items-center gap-1 text-sm text-muted hover:text-primary">
+      <Link to="/activities" className="inline-flex items-center gap-1 text-sm text-muted hover:text-primary">
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
         Back to activities
       </Link>
