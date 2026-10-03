@@ -1,162 +1,72 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { motion, useReducedMotion } from 'motion/react';
 import { ArrowRight, Play } from 'lucide-react';
 import { Button } from '../../../../components';
 import lovismLogo from '../../../../assets/lovism.png';
+import { EASE } from './motion';
+import '../styles/motion.css';
 
-/** How far the medallion follows the pointer, in degrees across half the bubble. */
-const TILT_RANGE = 18;
+/** Subtle LOVISM depth: desktop pointer parallax, max ~8px / 3deg. Never spins. */
+export function LovismVisual() {
+  const ref = useRef<HTMLDivElement>(null);
 
-/**
- * Animated Lovism medallion shown on the right of the homepage hero.
- *
- * Structure and presentation stay in Tailwind utility classes; every moving
- * part is driven by `styles/motion.css`. JavaScript supplies the motion: the
- * pointer position is written into the `--tilt-x` / `--tilt-y` custom
- * properties on every animation frame, and an IntersectionObserver plus a
- * `prefers-reduced-motion` check drive the `data-anim` attribute that parks all
- * animations when they are not needed.
- */
-function LovismMark() {
-  const brandRef = useRef<HTMLDivElement>(null);
-  const frameRef = useRef(0);
-
-  const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    const brand = brandRef.current;
-    // Touch already scrolls and pins, so only mouse/pen drive the tilt.
-    if (!brand || event.pointerType === 'touch') return;
-
-    const rect = brand.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return;
-
-    const offsetX = (event.clientX - rect.left) / rect.width - 0.5;
-    const offsetY = (event.clientY - rect.top) / rect.height - 0.5;
-
-    cancelAnimationFrame(frameRef.current);
-    frameRef.current = requestAnimationFrame(() => {
-      brand.style.setProperty('--tilt-y', `${(offsetX * TILT_RANGE * 2).toFixed(2)}deg`);
-      brand.style.setProperty('--tilt-x', `${(-offsetY * TILT_RANGE * 1.4).toFixed(2)}deg`);
+  const onMove = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    if (!el || e.pointerType === 'touch') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (window.innerWidth < 1024) return;
+    const rect = el.getBoundingClientRect();
+    const ox = (e.clientX - rect.left) / rect.width - 0.5;
+    const oy = (e.clientY - rect.top) / rect.height - 0.5;
+    requestAnimationFrame(() => {
+      el.style.setProperty('--tilt-y', `${(ox * 6).toFixed(2)}deg`);
+      el.style.setProperty('--tilt-x', `${(-oy * 4).toFixed(2)}deg`);
     });
   }, []);
 
-  const resetTilt = useCallback(() => {
-    const brand = brandRef.current;
-    if (!brand) return;
-
-    cancelAnimationFrame(frameRef.current);
-    brand.style.setProperty('--tilt-x', '0deg');
-    brand.style.setProperty('--tilt-y', '0deg');
+  const onLeave = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.setProperty('--tilt-x', '0deg');
+    el.style.setProperty('--tilt-y', '0deg');
   }, []);
 
-  useEffect(() => {
-    const brand = brandRef.current;
-    if (!brand) return;
-
-    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let inView = true;
-
-    const syncAnimationState = () => {
-      brand.dataset.anim = inView && !motionQuery.matches ? 'on' : 'off';
-    };
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        inView = entries.some((entry) => entry.isIntersecting);
-        syncAnimationState();
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(brand);
-    motionQuery.addEventListener('change', syncAnimationState);
-    syncAnimationState();
-
-    return () => {
-      observer.disconnect();
-      motionQuery.removeEventListener('change', syncAnimationState);
-      cancelAnimationFrame(frameRef.current);
-    };
-  }, []);
-
+  const reduce = useReducedMotion();
   return (
-    <div
-      ref={brandRef}
-      data-anim="on"
-      onPointerMove={handlePointerMove}
-      onPointerLeave={resetTilt}
-      className="flex shrink-0 items-center justify-center gap-2 self-center sm:gap-5 sm:self-auto xl:gap-7"
+    <motion.div
+      initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 20 }}
+      animate={reduce ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: [...EASE], delay: 0.35 }}
+      className="relative mx-auto w-44 sm:w-56 lg:w-72"
+      style={{ perspective: 900 }}
     >
-      <div className="relative size-28 shrink-0 sm:size-40 md:size-48 xl:size-64">
-        {/* Dashed halo ring orbiting behind the bubble. */}
-        <span
-          aria-hidden
-          className="hp-orbit pointer-events-none absolute -inset-[14%] rounded-full border border-dashed border-white/30"
-        />
-        <span
-          aria-hidden
-          className="hp-twinkle pointer-events-none absolute top-[2%] right-[4%] size-3.5 bg-white/90 [clip-path:polygon(50%_0%,61%_39%,100%_50%,61%_61%,50%_100%,39%_61%,0%_50%,39%_39%)]"
-        />
-        <span
-          aria-hidden
-          className="hp-twinkle hp-twinkle--delay pointer-events-none absolute bottom-[6%] left-[-1%] size-2.5 bg-white/90 [clip-path:polygon(50%_0%,61%_39%,100%_50%,61%_61%,50%_100%,39%_61%,0%_50%,39%_39%)]"
-        />
-
-        {/* Glassy bubble; `hp-float` supplies the bobbing. */}
-        <div
-          className="hp-float hp-flip-stage absolute inset-0 flex items-center justify-center rounded-full bg-[radial-gradient(circle_at_34%_28%,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0.62)_38%,rgba(207,232,250,0.42)_70%,rgba(147,197,232,0.34)_100%)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.6),inset_0_0_45px_10px_rgba(255,255,255,0.5),0_20px_45px_-18px_rgba(3,22,48,0.55)]"
-        >
-          {/* Pointer tilt wraps the card so the flip composes in 3D. */}
-          <div className="hp-tilt absolute inset-0 flex items-center justify-center [transform-style:preserve-3d]">
-            <div className="hp-flipper relative aspect-[813/996] w-1/2">
-              <div className="hp-flip-face absolute inset-0 flex items-center justify-center">
-                <img
-                  src={lovismLogo}
-                  alt="Lovism"
-                  className="h-full w-full -webkit-user-drag-none object-contain [filter:drop-shadow(0_8px_16px_rgba(122,0,0,0.4))] select-none"
-                  draggable={false}
-                />
-              </div>
-              {/* Mirrored twin, so the flip still shows the mark if the angle
-                  in `hp-flip` is ever raised past 90deg. */}
-              <div
-                aria-hidden
-                className="hp-flip-face hp-flip-face--back absolute inset-0 flex items-center justify-center"
-              >
-                <img
-                  src={lovismLogo}
-                  alt=""
-                  className="h-full w-full -webkit-user-drag-none object-contain [filter:drop-shadow(0_8px_16px_rgba(122,0,0,0.4))] select-none"
-                  draggable={false}
-                />
-              </div>
-            </div>
-          </div>
+      <span
+        aria-hidden
+        className="absolute -inset-[10%] rounded-full bg-[radial-gradient(circle_at_50%_45%,rgba(255,255,255,0.95)_0%,rgba(239,246,255,0.85)_55%,rgba(239,246,255,0)_75%)]"
+      />
+      <div ref={ref} onPointerMove={onMove} onPointerLeave={onLeave} className="hp-float relative">
+        <div className="hp-tilt">
+          <img
+            src={lovismLogo}
+            alt="Lovism"
+            draggable={false}
+            className="relative w-full object-contain select-none [filter:drop-shadow(0_10px_18px_rgba(15,23,42,0.22))]"
+          />
         </div>
       </div>
-
-      {/* Handwritten tagline; `hp-sway` supplies the gentle rock. */}
-      <p
-        className="hp-sway m-0 min-w-0 text-right text-2xl font-bold text-white/95 [font-family:'Caveat','Segoe_Script',cursive] [text-shadow:0_2px_14px_rgba(3,22,48,0.5)] sm:text-3xl xl:text-4xl"
-        style={{ lineHeight: 1.05 }}
-      >
-        <span className="block">Stronger</span>
-        <span className="block">Communities</span>
-        <span className="mt-[0.18em] block">Brighter</span>
-        <span className="block">Future</span>
-      </p>
-    </div>
+    </motion.div>
   );
 }
 
 /**
- * Full-bleed marketing hero: illustrated mountain landscape, dark navy overlay,
- * headline, CTAs and the animated Lovism brand mark with the tagline on the right.
+ * Cinematic hero: staggered text, parallax landscape,
+ * LOVISM visual right on desktop / stacked on mobile.
  */
 export function HeroSection() {
   return (
-    <section className="relative isolate overflow-hidden bg-[#0b2444]">
-      {/* Handwriting accent font, loaded only on the homepage hero. */}
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap');`}</style>
+    <section className="relative isolate overflow-hidden bg-[#eaf4fb]">
 
       <svg
         aria-hidden
@@ -213,56 +123,71 @@ export function HeroSection() {
         />
       </svg>
 
-      {/* Navy readability overlay, darker on the left where the copy sits. */}
+      {/* Soft white veil so the dark headline stays readable over the sky. */}
       <div
         aria-hidden
-        className="absolute inset-0 bg-linear-to-r from-[#0a1e3a]/90 via-[#0a1e3a]/75 to-[#0a1e3a]/40"
-      />
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-linear-to-t from-[#0a1e3a]/50 via-transparent to-transparent"
+        className="absolute inset-0 bg-linear-to-b from-white/90 via-white/55 to-white/10"
       />
 
-      <div className="relative mx-auto flex max-w-7xl flex-col gap-8 px-4 py-12 lg:flex-row lg:items-center lg:justify-between lg:py-16">
-        <div className="max-w-xl">
-          <span className="inline-flex items-center rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white/90 backdrop-blur">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-8 px-4 py-10 sm:py-14 lg:grid-cols-[minmax(0,1fr)_auto] lg:py-16">
+        <div className="min-w-0 text-center lg:text-left">
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [...EASE] }}
+            className="text-xs font-semibold tracking-wide text-primary"
+          >
             Together for a Better Community
-          </span>
+          </motion.p>
 
-          <h1 className="mt-5 text-4xl leading-[1.08] font-bold tracking-tight text-white sm:text-5xl">
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.65, ease: [...EASE], delay: 0.1 }}
+            className="mt-3 text-3xl leading-[1.1] font-bold tracking-tight text-secondary sm:text-4xl lg:text-5xl"
+          >
             Heavenly Path
-            <span className="block text-sky-400">Sunsari District</span>
-          </h1>
-
-          <p className="mt-4 max-w-lg text-sm leading-relaxed text-white/80 sm:text-[15px]">
+            <span className="block text-primary">Sunsari District</span>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, ease: [...EASE], delay: 0.2 }}
+            className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-slate-600 sm:text-[15px] lg:mx-0"
+          >
             Empowering communities, building stronger connections, and creating a brighter future
             for all.
-          </p>
+          </motion.p>
 
-          <div className="mt-6 flex flex-wrap gap-3">
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [...EASE], delay: 0.3 }}
+            className="mt-6 flex flex-wrap justify-center gap-3 lg:justify-start"
+          >
             <Link to="/structure">
               <Button
                 size="lg"
                 className="rounded-full px-5"
                 rightIcon={<ArrowRight className="h-4 w-4" />}
               >
-                Explore Our Community
+                Explore Our Organization
               </Button>
             </Link>
             <Link to="/activities">
               <Button
                 variant="outline"
                 size="lg"
-                className="rounded-full border-white/60 bg-white/10 px-5 text-white hover:bg-white/20"
+                className="rounded-full bg-white/80 px-5"
                 leftIcon={<Play className="h-3.5 w-3.5" />}
               >
                 Watch Video
               </Button>
             </Link>
-          </div>
+          </motion.div>
         </div>
 
-        <LovismMark />
+        <LovismVisual />
       </div>
     </section>
   );
