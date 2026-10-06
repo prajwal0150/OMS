@@ -1,91 +1,64 @@
-import { Link } from 'react-router-dom';
-import { ArrowRight, UsersRound } from 'lucide-react';
-import { Button } from '../../../../components';
-import { usePublicList } from '../../hooks/usePublicData';
-import {
-  fetchAnnouncementsPublic,
-  fetchContentPublic,
-  fetchUnitsPublic,
-} from '../../services/publicService';
-import type { Announcement, ContentRecord, Unit } from '../../../../types';
+import { usePublicDetail, usePublicList } from '../../hooks/usePublicData';
+import { fetchAnnouncementsPublic, fetchContentPublic, fetchEventsPublic, fetchGalleryPublic, fetchUnitsPublic } from '../../services/publicService';
+import type { Announcement, ContentRecord, EventRecord, Unit } from '../../../../types';
+import type { GalleryImage } from '../../services/publicService';
 import { HeroSection } from '../components/HeroSection';
-import { QuickLinksRow } from '../components/QuickLinksRow';
-import { LatestNewsPanel } from '../components/LatestNewsPanel';
-import { UnitsPanel } from '../components/UnitsPanel';
-import { AnnouncementsPanel, QuickAccessPanel } from '../components/SidePanels';
+import { LatestNewsStory } from '../components/LatestNewsStory';
+import { ActivitiesStory } from '../components/ActivitiesStory';
+import { EventsStory } from '../components/EventsStory';
+import { CommunityHighlights } from '../components/CommunityHighlights';
+import { EditorialStories } from '../components/EditorialStories';
+import { MomentsGallery } from '../components/MomentsGallery';
+import { WatchStories } from '../components/WatchStories';
+import { AnnouncementsStory } from '../components/AnnouncementsStory';
+import { FinalCta, ImpactStrip } from '../components/ClosingSections';
 import '../styles/motion.css';
 
-/**
- * Public landing page: hero, quick links, latest news, units, sidebar with
- * quick access and announcements, plus the join-our-community call to action.
- */
+const pickByTypes = (items: ContentRecord[], types: string[]) =>
+  items.filter((i) => types.includes(i.contentType));
+
+/** Content-first story homepage: hero, live stories, events, gallery, CTA. */
 export function HomePage() {
-  const content = usePublicList<ContentRecord>(fetchContentPublic, { limit: 3 });
-  const announcements = usePublicList<Announcement>(fetchAnnouncementsPublic, { limit: 4 });
-  const units = usePublicList<Unit>(fetchUnitsPublic, { limit: 100 });
+  const content = usePublicList<ContentRecord>(fetchContentPublic, { limit: 12 });
+  const events = usePublicList<EventRecord>(fetchEventsPublic, { limit: 12 });
+  const announcements = usePublicList<Announcement>(fetchAnnouncementsPublic, { limit: 6 });
+  const units = usePublicList<Unit>(fetchUnitsPublic, { limit: 20 });
+  const gallery = usePublicDetail<GalleryImage[]>(() => fetchGalleryPublic(24));
+
+  const items = content.items;
+  const latest = items.slice(0, 5);
+  const activities = pickByTypes(items, ['ACTIVITY', 'TRAINING', 'AWARENESS', 'MEETING_REPORT', 'EVENT_STORY']).slice(0, 4);
+  const activityFallback = activities.length > 0 ? activities : items.slice(0, 4);
+  const communityStories = pickByTypes(items, ['COMMUNITY_STORY']).slice(0, 3);
+  const editorial = items.slice(0, 3);
 
   const unitTotal = units.pagination?.pagination?.total ?? units.items.length;
-  const topUnits = units.items.slice(0, 4);
+  const totals = [
+    { label: 'Units', value: unitTotal, hint: 'across Sunsari' },
+    { label: 'Stories', value: content.pagination?.pagination?.total ?? items.length, hint: 'published updates' },
+    { label: 'Events', value: events.pagination?.pagination?.total ?? events.items.length, hint: 'on the calendar' },
+    { label: 'Notices', value: announcements.pagination?.pagination?.total ?? announcements.items.length, hint: 'announcements' },
+  ];
+  const totalsLoading = content.loading || events.loading || announcements.loading || units.loading;
 
   return (
-    <div>
+    <div className="overflow-x-clip">
       <HeroSection />
-
-      <div className="mx-auto w-full max-w-7xl px-4">
-        <QuickLinksRow unitCount={unitTotal} />
-
-        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-          {/* Main column */}
-          <div className="min-w-0 space-y-4">
-            <LatestNewsPanel
-              items={content.items}
-              loading={content.loading}
-              error={content.error}
-              onRetry={content.refresh}
-            />
-            <UnitsPanel
-              items={topUnits}
-              loading={units.loading}
-              error={units.error}
-              onRetry={units.refresh}
-            />
-
-            {/* Join our community banner */}
-            <section className="flex flex-col gap-4 rounded-lg border border-blue-100 bg-primary-soft px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <UsersRound className="h-7 w-7 shrink-0 text-primary" aria-hidden />
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-secondary">Join Our Community</p>
-                  <p className="text-xs text-muted">
-                    Be a part of something meaningful. Together we can make a difference.
-                  </p>
-                </div>
-              </div>
-              <Link to="/contact" className="shrink-0 self-start sm:self-auto">
-                <Button
-                  className="rounded-full px-5"
-                  rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
-                >
-                  Learn More
-                </Button>
-              </Link>
-            </section>
-          </div>
-
-          {/* Sidebar column */}
-          <div className="min-w-0 space-y-4">
-            <QuickAccessPanel />
-            <AnnouncementsPanel
-              items={announcements.items}
-              loading={announcements.loading}
-              error={announcements.error}
-              onRetry={announcements.refresh}
-            />
-          </div>
-        </div>
+      <div className="pb-2">
+        <LatestNewsStory items={latest} loading={content.loading} error={content.error} onRetry={content.refresh} />
+        <ActivitiesStory items={activityFallback} loading={content.loading} error={content.error} onRetry={content.refresh} />
+        <EventsStory items={events.items} loading={events.loading} error={events.error} onRetry={events.refresh} />
+        <CommunityHighlights items={communityStories} />
+        <EditorialStories items={editorial} />
+        <MomentsGallery images={gallery.data ?? []} loading={gallery.loading} error={gallery.error} onRetry={gallery.reload} />
+        <WatchStories items={items} />
+        <AnnouncementsStory items={announcements.items} loading={announcements.loading} error={announcements.error} onRetry={announcements.refresh} />
+        <ImpactStrip totals={totals} loading={totalsLoading} />
+        <FinalCta />
       </div>
     </div>
   );
 }
 
 export default HomePage;
+
