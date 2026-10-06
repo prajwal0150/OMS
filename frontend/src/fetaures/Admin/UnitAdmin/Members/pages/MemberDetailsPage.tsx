@@ -12,6 +12,7 @@ import {
 } from '../../../../../components';
 import { fetchMemberById } from '../services/memberService';
 import { resolveAssetUrl } from '../../../../../services/api/httpClient';
+import { normalizeApiError } from '../../../../../services/api/apiClient';
 import { useAuthState } from '../../../../Auth/hooks/useAuth';
 import { refName, humanize, type Member } from '../../../../../types';
 
@@ -34,7 +35,7 @@ export function MemberDetailsPage() {
     try {
       setMember(await fetchMemberById(id));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to load this member');
+      setError(caught instanceof Error ? normalizeApiError(caught).message : 'Unable to load this member');
     } finally {
       setLoading(false);
     }

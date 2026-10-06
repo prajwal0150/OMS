@@ -94,12 +94,14 @@ export function ProfilePage() {
       </div>
 
       <Card>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-base font-semibold text-white">
             {member.firstName?.[0]}
             {member.lastName?.[0]}
           </span>
-          <div className="min-w-0">
+          {/* flex-1 keeps the name on the first row; the action pills wrap to
+              their own line on narrow screens instead of squeezing it. */}
+          <div className="min-w-0 flex-1">
             <p className="truncate text-base font-semibold text-secondary">
               {member.fullName ??
                 [member.firstName, member.middleName, member.lastName].filter(Boolean).join(' ')}

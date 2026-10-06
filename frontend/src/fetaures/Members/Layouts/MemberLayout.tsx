@@ -126,7 +126,7 @@ export function MemberLayout() {
         </header>
 
         {open && (
-          <div className="shrink-0 border-b border-line bg-white p-2 lg:hidden">
+          <div className="max-h-[calc(100vh-3rem)] shrink-0 overflow-y-auto border-b border-line bg-white p-2 lg:hidden">
             {navigation}
             <SignOutButton onSignOut={logout} />
           </div>

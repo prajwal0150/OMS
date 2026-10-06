@@ -98,7 +98,7 @@ export function NotificationsPage() {
           {items.map((notification) => (
             <li key={notification._id}>
               <Card
-                className={`flex items-start gap-3 ${notification.isRead ? '' : 'border-primary/30 bg-primary-soft/30'}`}
+                className={`flex flex-wrap items-start gap-3 ${notification.isRead ? '' : 'border-primary/30 bg-primary-soft/30'}`}
               >
                 <span
                   className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
@@ -122,7 +122,12 @@ export function NotificationsPage() {
                     })}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-1">
+                {/*
+                  On narrow screens the action row takes its own full-width
+                  line under the content so the buttons never squeeze the
+                  notification text; from sm up it sits inline as before.
+                */}
+                <div className="flex w-full shrink-0 flex-wrap items-center gap-1 sm:w-auto">
                   {notification.link && (
                     <Button
                       size="sm"

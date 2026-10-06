@@ -20,7 +20,21 @@ createRoot(document.getElementById('root')!).render(
             containerStyle={{ top: '64px', right: '16px', zIndex: 999999 }}
             toastOptions={{
               duration: 2800,
-              style: { borderRadius: '8px', background: '#fff', color: '#0F172A', fontSize: '13px' },
+              style: {
+                borderRadius: '8px',
+                background: '#fff',
+                color: '#0F172A',
+                fontSize: '13px',
+                // Cap long messages to the viewport so toasts never trigger
+                // horizontal scrolling on narrow screens.
+                maxWidth: 'calc(100vw - 32px)',
+                // Validation errors list one invalid field per line; render
+                // the newlines instead of collapsing them into one run-on line.
+                whiteSpace: 'pre-line',
+              },
+              // Backend validation errors can list several fields - give the
+              // reader a little longer than the 2.8s used for simple toasts.
+              error: { duration: 6000 },
             }}
           />
         </AuthProvider>

@@ -116,7 +116,7 @@ export function ProfilePage() {
       </div>
 
       <Card>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
             {initialsOf(profile)}
           </span>

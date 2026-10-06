@@ -20,6 +20,7 @@ import {
   type ReportFilters,
 } from '../services/reportService';
 import { useAuthState } from '../../../../Auth/hooks/useAuth';
+import { normalizeApiError } from '../../../../../services/api/apiClient';
 import type { ExportFormat, ReportType } from '../../../../../types';
 
 const FORMATS: Array<{ value: ExportFormat; label: string; icon: typeof FileText }> = [
@@ -98,7 +99,7 @@ export function ReportsPage() {
     try {
       setData((await previewReport(reportType, current)) as Record<string, unknown>);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to build this report');
+      setError(caught instanceof Error ? normalizeApiError(caught).message : 'Unable to build this report');
     } finally {
       setLoading(false);
     }
@@ -113,7 +114,7 @@ export function ReportsPage() {
     try {
       await generateReport({ type, format, ...activeFilters });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Export failed');
+      setError(caught instanceof Error ? normalizeApiError(caught).message : 'Export failed');
     } finally {
       setExporting(null);
     }

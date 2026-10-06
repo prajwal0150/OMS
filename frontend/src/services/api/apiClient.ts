@@ -63,6 +63,21 @@ export const normalizeApiError = (error: unknown): NormalizedApiError => {
     }
     if (!message) message = STATUS_MESSAGES[status] ?? 'Something went wrong';
 
+    /*
+     * Validation failures carry the per-field problems in `errors`
+     * ({ field, message }). Fold them into the main message so every caller
+     * that surfaces only `.message` - toasts, ErrorState, thunk rejections -
+     * shows exactly which value failed and why instead of the bare
+     * "Validation failed". One detail per line; toasts render the newlines
+     * via `white-space: pre-line`.
+     */
+    if (details.length > 0) {
+      const detailLines = details.map((detail) =>
+        detail.field ? `${detail.field}: ${detail.message}` : detail.message,
+      );
+      message = message ? `${message}\n${detailLines.join('\n')}` : detailLines.join('\n');
+    }
+
     const normalized = new Error(message) as NormalizedApiError;
     normalized.status = status;
     normalized.details = details;
