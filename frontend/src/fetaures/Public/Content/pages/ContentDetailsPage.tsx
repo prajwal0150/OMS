@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, Eye, MapPin, Users } from 'lucide-react';
 import { Badge, ErrorState, ImageGallery, LoadingState } from '../../../../components/ui';
 import { humanize, refName } from '../../../../types';
 import { resolveAssetUrl } from '../../../../services/api/httpClient';
+import { Reveal, Stagger, StaggerItem } from '../../Layouts/components/PublicMotion';
 import { VideoEmbed } from '../../Layouts/components/publicSections';
 import { usePublicDetail, usePublicList } from '../../hooks/usePublicData';
 import { fetchContentBySlug, fetchContentPublic } from '../../services/publicService';
@@ -35,6 +36,7 @@ export function ContentDetailsPage() {
         Back to activities
       </Link>
 
+      <Reveal>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Badge tone="primary">{humanize(content.contentType)}</Badge>
         {content.publishedAt && (
@@ -52,6 +54,7 @@ export function ContentDetailsPage() {
       </div>
 
       <h1 className="mt-2 text-2xl font-semibold text-secondary">{content.title}</h1>
+      </Reveal>
 
       <p className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted">
         {publisher && (
@@ -69,11 +72,13 @@ export function ContentDetailsPage() {
       </p>
 
       {content.coverImage && (
+        <Reveal y={24}>
         <img
           src={resolveAssetUrl(content.coverImage)}
           alt=""
           className="mt-4 w-full rounded-lg border border-line object-cover"
         />
+        </Reveal>
       )}
 
       {/* The server sanitizes this HTML before persisting it. */}
@@ -98,24 +103,27 @@ export function ContentDetailsPage() {
       )}
 
       {related.items.length > 0 && (
+        <Reveal>
         <section className="mt-6">
           <h2 className="mb-2 text-base font-semibold text-secondary">Related content</h2>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <Stagger className="grid gap-3 sm:grid-cols-3" stagger={0.08}>
             {related.items
               .filter((item) => item._id !== content._id)
               .slice(0, 3)
               .map((item) => (
+                <StaggerItem key={item._id}>
                 <Link
-                  key={item._id}
                   to={`/content/${item.slug}`}
-                  className="rounded-lg border border-line bg-white p-3 transition-colors hover:border-primary/40"
+                  className="block h-full rounded-lg border border-line bg-white p-3 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
                 >
                   <Badge tone="neutral">{humanize(item.contentType)}</Badge>
                   <p className="mt-1.5 line-clamp-2 text-sm font-medium text-secondary">{item.title}</p>
                 </Link>
+                </StaggerItem>
               ))}
-          </div>
+          </Stagger>
         </section>
+        </Reveal>
       )}
     </article>
   );

@@ -1,3 +1,4 @@
+import { Stagger, StaggerItem } from '../../Layouts/components/PublicMotion';
 import { PublicPageHeader, PublicState } from '../../Layouts/components/publicSections';
 import { usePublicDetail } from '../../hooks/usePublicData';
 import { fetchGalleryPublic } from '../../services/publicService';
@@ -23,11 +24,11 @@ export function GalleryPage() {
         emptyDescription="Photos attached to published stories will appear here."
         skeletonCount={9}
       >
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+        <Stagger className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4" stagger={0.05}>
           {(images ?? []).map((image, index) => (
+            <StaggerItem key={`${image.url}-${index}`}>
             <figure
-              key={`${image.url}-${index}`}
-              className="group overflow-hidden rounded-lg border border-line bg-white shadow-sm"
+              className="group h-full overflow-hidden rounded-lg border border-line bg-white shadow-sm"
             >
               <img
                 src={resolveAssetUrl(image.url)}
@@ -39,8 +40,9 @@ export function GalleryPage() {
                 <figcaption className="px-2.5 py-1.5 text-xs text-muted">{image.caption}</figcaption>
               )}
             </figure>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </PublicState>
     </div>
   );

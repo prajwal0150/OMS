@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { Megaphone } from 'lucide-react';
 import { Badge, Card } from '../../../../components/ui';
 import { humanize } from '../../../../types';
+import { Stagger, StaggerItem } from '../../Layouts/components/PublicMotion';
 import {
   PublicPageHeader,
   PublicPagination,
@@ -35,9 +36,10 @@ export function AnnouncementsPage() {
         emptyDescription="Notices published by the district will appear here."
         skeletonCount={4}
       >
-        <div className="space-y-2">
+        <Stagger className="space-y-2" stagger={0.07}>
           {list.items.map((announcement) => (
-            <Card key={announcement._id}>
+            <StaggerItem key={announcement._id}>
+            <Card className="transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
               <div className="flex items-start gap-3">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-warning">
                   <Megaphone className="h-4 w-4" aria-hidden />
@@ -59,8 +61,9 @@ export function AnnouncementsPage() {
                 </div>
               </div>
             </Card>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </PublicState>
 
       <PublicPagination meta={list.pagination} onPageChange={setPage} itemLabel="announcements" />

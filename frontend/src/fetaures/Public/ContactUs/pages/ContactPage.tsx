@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { CheckCircle2, Mail, MapPin, Phone } from 'lucide-react';
+import { Reveal, Stagger, StaggerItem } from '../../Layouts/components/PublicMotion';
 import { Button, Card, ErrorState, Input, Textarea } from '../../../../components/ui';
 import { PublicPageHeader } from '../../Layouts/components/publicSections';
 import { usePublicDetail } from '../../hooks/usePublicData';
@@ -59,13 +60,14 @@ export function ContactPage() {
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="space-y-3">
+        <Stagger className="space-y-3" stagger={0.1}>
           {[
             { icon: MapPin, label: 'Address', value: district?.contact?.address ?? 'Sunsari, Koshi Province, Nepal' },
             { icon: Phone, label: 'Phone', value: district?.contact?.phone ?? 'Contact your nearest unit' },
             { icon: Mail, label: 'Email', value: district?.contact?.email ?? 'Contact your nearest unit' },
           ].map((item) => (
-            <Card key={item.label}>
+            <StaggerItem key={item.label}>
+            <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
               <div className="flex items-start gap-3">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
                   <item.icon className="h-4 w-4" aria-hidden />
@@ -76,10 +78,12 @@ export function ContactPage() {
                 </div>
               </div>
             </Card>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
 
-        <Card className="lg:col-span-2">
+        <Reveal className="lg:col-span-2" y={24}>
+        <Card>
           <h2 className="text-base font-semibold text-secondary">Send a message</h2>
           {reference ? (
             <div className="mt-3 flex flex-col items-center gap-2 py-8 text-center">
@@ -144,6 +148,7 @@ export function ContactPage() {
             </form>
           )}
         </Card>
+        </Reveal>
       </div>
     </div>
   );

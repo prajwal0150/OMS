@@ -15,6 +15,7 @@ import {
 } from '../../Layouts/components/publicSections';
 import { usePublicList } from '../../hooks/usePublicData';
 import { fetchContentPublic, fetchEventsPublic } from '../../services/publicService';
+import { Stagger, StaggerItem } from '../../Layouts/components/PublicMotion';
 
 const TYPE_OPTIONS = Object.values(CONTENT_TYPE).map((value) => ({
   value,
@@ -87,9 +88,10 @@ export function ActivitiesPage() {
           emptyTitle="No events scheduled"
           emptyDescription="Upcoming events will appear here as they are published."
         >
-          <div className="space-y-2">
+          <Stagger className="space-y-2" stagger={0.08}>
             {events.items.map((event) => (
-              <Card key={event._id} className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <StaggerItem key={event._id}>
+              <Card className="flex flex-col gap-3 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md sm:flex-row sm:items-center">
                 <div className="flex w-14 shrink-0 items-center justify-center rounded-lg bg-primary p-2 text-center text-white">
                   <div>
                     <p className="text-lg leading-none font-semibold">
@@ -130,8 +132,9 @@ export function ActivitiesPage() {
                   </div>
                 </div>
               </Card>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </PublicState>
 
         <PublicPagination
@@ -166,12 +169,12 @@ export function ActivitiesPage() {
           emptyTitle="No articles published yet"
           emptyDescription="Published stories and updates will appear here."
         >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Stagger className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" stagger={0.08}>
             {stories.items.map((item) => (
+              <StaggerItem key={item._id}>
               <Link
-                key={item._id}
                 to={`/content/${item.slug}`}
-                className="group flex flex-col overflow-hidden rounded-lg border border-line bg-white shadow-sm transition-colors hover:border-primary/40"
+                className="group flex h-full flex-col overflow-hidden rounded-lg border border-line bg-white shadow-sm transition-colors hover:border-primary/40"
               >
                 {item.coverImage ? (
                   <img
@@ -199,8 +202,9 @@ export function ActivitiesPage() {
                   </p>
                 </div>
               </Link>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </PublicState>
 
         <PublicPagination

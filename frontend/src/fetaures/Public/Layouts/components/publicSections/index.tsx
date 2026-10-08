@@ -1,4 +1,5 @@
-﻿import type { ReactNode } from 'react';
+import { motion } from 'motion/react';
+import type { ReactNode } from 'react';
 import { Card, EmptyState, ErrorState, Pagination, Skeleton } from '../../../../../components/ui';
 import { resolveAssetUrl } from '../../../../../services/api/httpClient';
 
@@ -50,16 +51,44 @@ export interface PublicPageHeaderProps {
 
 export function PublicPageHeader({ title, description, eyebrow, actions }: PublicPageHeaderProps) {
   return (
-    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="mb-4 flex flex-wrap items-end justify-between gap-3"
+    >
       <div>
         {eyebrow && (
-          <p className="text-xs font-medium tracking-widest text-primary uppercase">{eyebrow}</p>
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            className="text-xs font-medium tracking-widest text-primary uppercase"
+          >
+            {eyebrow}
+          </motion.p>
         )}
-        <h1 className="text-2xl font-semibold text-secondary">{title}</h1>
-        {description && <p className="mt-1 max-w-2xl text-sm text-muted">{description}</p>}
+        <motion.h1
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+          className="text-2xl font-semibold text-secondary"
+        >
+          {title}
+        </motion.h1>
+        {description && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.45, delay: 0.18 }}
+            className="mt-1 max-w-2xl text-sm text-muted"
+          >
+            {description}
+          </motion.p>
+        )}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
-    </div>
+    </motion.div>
   );
 }
 

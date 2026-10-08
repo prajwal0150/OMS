@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { Facebook, Linkedin, Mail, MapPin, Phone, Twitter, Youtube } from 'lucide-react';
 import { usePublicDetail } from '../../hooks/usePublicData';
 import { fetchOrganizationPublic } from '../../services/publicService';
@@ -25,7 +26,13 @@ export function PublicFooter() {
   const socialLinks = organization?.socialLinks;
 
   return (
-    <footer className="mt-6 bg-secondary text-slate-300">
+    <motion.footer
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, amount: 0.05 }}
+      transition={{ duration: 0.5 }}
+      className="mt-6 bg-secondary text-slate-300"
+    >
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-8 gap-y-5 px-4 py-8">
         <Link to="/" className="flex items-center gap-2.5">
           <OrganizationLogo className="h-10 w-10" />
@@ -114,7 +121,7 @@ export function PublicFooter() {
           </p>
         </div>
       </div>
-    </footer>
+    </motion.footer>
   );
 }
 

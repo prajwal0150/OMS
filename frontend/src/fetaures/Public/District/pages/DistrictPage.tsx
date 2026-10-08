@@ -1,3 +1,4 @@
+import { Reveal, Stagger, StaggerItem } from '../../Layouts/components/PublicMotion';
 import { Card } from '../../../../components/ui';
 import { PublicPageHeader } from '../../Layouts/components/publicSections';
 import { usePublicDetail, usePublicList } from '../../hooks/usePublicData';
@@ -15,22 +16,25 @@ export function DistrictPage() {
         description={district?.description ?? 'The Sunsari district chapter of HEAVENLY PATH.'}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <Stagger className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" stagger={0.08}>
         {[
           { label: 'Province', value: district?.province ?? '-' },
           { label: 'Country', value: district?.country ?? '-' },
           { label: 'District code', value: district?.code ?? '-' },
           { label: 'Units', value: units.pagination?.pagination?.total ?? 0 },
         ].map((item) => (
-          <Card key={item.label}>
+          <StaggerItem key={item.label}>
+          <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
             <p className="text-xs text-muted uppercase">{item.label}</p>
             <p className="mt-1 text-lg font-semibold text-secondary">{item.value}</p>
           </Card>
+          </StaggerItem>
         ))}
-      </div>
+      </Stagger>
 
       {district?.contact && (
-        <Card className="mt-4">
+        <Reveal className="mt-4">
+        <Card>
           <h2 className="text-base font-semibold text-secondary">Contact</h2>
           <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-3">
             {district.contact.phone && (
@@ -53,6 +57,7 @@ export function DistrictPage() {
             )}
           </dl>
         </Card>
+        </Reveal>
       )}
 
       {error && <p className="mt-3 text-sm text-danger">{error}</p>}

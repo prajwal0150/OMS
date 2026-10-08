@@ -12,6 +12,7 @@ import {
 } from '../../Layouts/components/publicSections';
 import { usePublicList } from '../../hooks/usePublicData';
 import { fetchCommunitiesPublic, fetchUnitsPublic } from '../../services/publicService';
+import { Stagger, StaggerItem } from '../../Layouts/components/PublicMotion';
 
 /**
  * Public "Structure" page.
@@ -80,9 +81,10 @@ export function StructurePage() {
           emptyTitle="No units yet"
           emptyDescription="Check back soon - new units are published regularly."
         >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Stagger className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" stagger={0.08}>
             {units.items.map((item) => (
-              <Card key={item._id} className="flex flex-col">
+              <StaggerItem key={item._id}>
+              <Card className="flex h-full flex-col transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-soft text-primary">
                     <Network className="h-4 w-4" aria-hidden />
@@ -103,8 +105,9 @@ export function StructurePage() {
                   {item.description}
                 </p>
               </Card>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </PublicState>
 
         <PublicPagination
@@ -130,9 +133,10 @@ export function StructurePage() {
           emptyTitle="No communities yet"
           emptyDescription="Check back soon - new communities are published regularly."
         >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Stagger className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" stagger={0.08}>
             {communities.items.map((item) => (
-              <Card key={item._id}>
+              <StaggerItem key={item._id}>
+              <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent">
                     <UsersRound className="h-4 w-4" aria-hidden />
@@ -148,8 +152,9 @@ export function StructurePage() {
                   {item.description}
                 </p>
               </Card>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </PublicState>
 
         <PublicPagination

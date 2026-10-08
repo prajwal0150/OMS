@@ -1,3 +1,4 @@
+import { Reveal, Stagger, StaggerItem } from '../../Layouts/components/PublicMotion';
 import { Card } from '../../../../components/ui';
 import { PublicPageHeader } from '../../Layouts/components/publicSections';
 import { usePublicDetail, usePublicList } from '../../hooks/usePublicData';
@@ -35,6 +36,7 @@ export function AboutPage() {
         }
       />
 
+      <Reveal>
       <Card>
         <h2 className="text-base font-semibold text-secondary">Who we are</h2>
         <p className="mt-2 text-sm leading-relaxed text-slate-700">
@@ -49,18 +51,22 @@ export function AboutPage() {
           </p>
         )}
       </Card>
+      </Reveal>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <Stagger className="mt-4 grid gap-3 sm:grid-cols-3" stagger={0.1}>
         {PILLARS.map((pillar) => (
-          <Card key={pillar.title}>
+          <StaggerItem key={pillar.title}>
+          <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
             <h3 className="text-sm font-semibold text-secondary">{pillar.title}</h3>
             <p className="mt-1 text-xs leading-relaxed text-muted">{pillar.text}</p>
           </Card>
+          </StaggerItem>
         ))}
-      </div>
+      </Stagger>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <Card>
+      <Stagger className="mt-4 grid gap-4 sm:grid-cols-2" stagger={0.1}>
+        <StaggerItem>
+        <Card className="h-full">
           <h2 className="text-base font-semibold text-secondary">Units ({units.items.length})</h2>
           <ul className="mt-2 space-y-1 text-sm text-slate-700">
             {units.items.map((unit) => (
@@ -71,7 +77,9 @@ export function AboutPage() {
             ))}
           </ul>
         </Card>
-        <Card>
+        </StaggerItem>
+        <StaggerItem>
+        <Card className="h-full">
           <h2 className="text-base font-semibold text-secondary">
             Communities ({communities.items.length})
           </h2>
@@ -84,9 +92,11 @@ export function AboutPage() {
             ))}
           </ul>
         </Card>
-      </div>
+        </StaggerItem>
+      </Stagger>
 
-      <Card className="mt-4">
+      <Reveal className="mt-4">
+      <Card>
         <h2 className="text-base font-semibold text-secondary">Structure</h2>
         <ul className="mt-2 space-y-1.5 text-sm text-slate-700">
           <li>• {DEFAULT_DISTRICT_NAME} District Committee - the highest elected body.</li>
@@ -94,6 +104,7 @@ export function AboutPage() {
           <li>• Three Community Committees - Parents, Women and Youth.</li>
         </ul>
       </Card>
+      </Reveal>
     </div>
   );
 }

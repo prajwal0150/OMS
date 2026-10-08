@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
 import { Menu, Search, UserRound, X } from 'lucide-react';
 import { useAuthState } from '../../../Auth/hooks/useAuth';
 import {
@@ -29,13 +30,20 @@ export function PublicHeader() {
   const submitSearch = (event: FormEvent) => {
     event.preventDefault();
     const trimmed = query.trim();
+    // The mobile menu is open in this form's context; dismiss it as we navigate.
+    setOpen(false);
     navigate(trimmed ? `/activities?search=${encodeURIComponent(trimmed)}` : '/activities');
   };
 
   const dashboardTo = isAuthenticated ? (role === 'MEMBER' ? '/portal' : '/admin') : '/login';
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
+    <motion.header
+      initial={{ opacity: 0, y: -12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur"
+    >
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4">
         <Link to="/" className="flex shrink-0 items-center gap-2.5">
           <OrganizationLogo className="h-9 w-9" />
@@ -108,8 +116,17 @@ export function PublicHeader() {
         </div>
       </div>
 
+      <AnimatePresence>
       {open && (
-        <nav className="border-t border-line bg-white p-2 xl:hidden" aria-label="Mobile">
+        <motion.nav
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
+          className="overflow-hidden border-t border-line bg-white xl:hidden"
+          aria-label="Mobile"
+        >
+        <div className="p-2">
           <ul className="grid grid-cols-2 gap-1 sm:grid-cols-3">
             {LINKS.map((link) => (
               <li key={link.to}>
@@ -150,11 +167,13 @@ export function PublicHeader() {
             <UserRound className="h-3.5 w-3.5" aria-hidden />
             {isAuthenticated ? 'Dashboard' : 'Login'}
           </Link>
-        </nav>
+        </div>
+        </motion.nav>
       )}
+      </AnimatePresence>
 
       <span className="sr-only">{ORGANIZATION_NAME}</span>
-    </header>
+    </motion.header>
   );
 }
 

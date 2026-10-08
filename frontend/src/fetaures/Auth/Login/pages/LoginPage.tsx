@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { AlertCircle, Lock, LogIn, ShieldCheck } from 'lucide-react';
 import { Button, Input, Card } from '../../../../components/ui';
 import { useAuthState } from '../../hooks/useAuth';
@@ -44,14 +45,24 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-app-bg px-4 py-8">
       <div className="w-full max-w-sm">
-        <div className="mb-5 text-center">
+        <motion.div
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        className="mb-5 text-center"
+      >
           <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-white">
             <ShieldCheck className="h-5 w-5" aria-hidden />
           </div>
           <h1 className="mt-3 text-lg font-semibold text-secondary">{ORGANIZATION_NAME}</h1>
           <p className="text-sm text-muted">Sign in to your account</p>
-        </div>
+        </motion.div>
 
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+        >
         <Card>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-3" noValidate>
             {error && (
@@ -95,6 +106,7 @@ export function LoginPage() {
             </Link>
           </div>
         </Card>
+        </motion.div>
 
         <p className="mt-4 text-center text-xs text-muted">
           Accounts are created by an administrator. There is no public registration.
