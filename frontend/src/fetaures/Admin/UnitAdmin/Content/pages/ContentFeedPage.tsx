@@ -30,16 +30,13 @@ import {
 } from '../../../../../components';
 import { useContent } from '../hooks/useContent';
 import {
-  approveContent,
   archiveContent,
   createContent,
   deleteContent,
   publishContent,
-  rejectContent,
-  submitContent,
   unpublishContent,
 } from '../services/contentService';
-import { isImage as isImageFile, uploadMedia } from '../../Shared/services/mediaService';
+import { isImage as isImageFile, isVideo as isVideoFile, uploadMedia } from '../../Shared/services/mediaService';
 import { uploadDocument } from '../../Shared/services/documentService';
 import { resolveAssetUrl } from '../../../../../services/api/httpClient';
 import { normalizeApiError } from '../../../../../services/api/apiClient';
@@ -48,6 +45,7 @@ import {
   CONTENT_STATUS,
   CONTENT_TYPE,
   ENUM_LABELS,
+  VIDEO_TYPE,
   VISIBILITY,
   humanize,
   refName,
@@ -57,7 +55,8 @@ import {
   type Visibility,
 } from '../../../../../types';
 
-const TYPE_OPTIONS = Object.values(CONTENT_TYPE).map((value) => ({
+/** The feed composer only offers news and activities. */
+const TYPE_OPTIONS = [CONTENT_TYPE.NEWS, CONTENT_TYPE.ACTIVITY].map((value) => ({
   value,
   label: ENUM_LABELS[value] ?? humanize(value),
 }));
@@ -116,7 +115,7 @@ interface ComposerState {
 const EMPTY_COMPOSER: ComposerState = {
   text: '',
   contentType: CONTENT_TYPE.NEWS,
-  visibility: VISIBILITY.DISTRICT_ONLY,
+  visibility: VISIBILITY.PUBLIC,
   files: [],
   documents: [],
 };
@@ -170,12 +169,15 @@ export function ContentFeedPage() {
       }
 
       const gallery = uploaded.filter((item) => isImageFile(item));
+      const videos = uploaded.filter((item) => isVideoFile(item));
       const title = text.split('\n')[0].slice(0, 120) || 'Untitled post';
-      await createContent({
+      const created = await createContent({
         title,
         content: text,
         contentType: composer.contentType,
         visibility: composer.visibility,
+        // The first photo becomes the cover shown on the public list + detail page.
+        ...(gallery.length ? { coverImage: gallery[0].storageUrl } : {}),
         ...(gallery.length
           ? {
               gallery: gallery.map((item, index) => ({
@@ -186,11 +188,31 @@ export function ContentFeedPage() {
               })),
             }
           : {}),
+        // Uploaded videos are attached to the post so they render on the public page.
+        ...(videos.length
+          ? {
+              videos: videos.map((item) => ({
+                videoType: VIDEO_TYPE.UPLOAD,
+                videoUrl: item.storageUrl,
+                thumbnail: item.thumbnailUrl,
+                caption: item.caption,
+              })),
+            }
+          : {}),
         ...(documentIds.length ? { documents: documentIds } : {}),
       });
 
+      // No review step: whoever holds `content.publish` goes straight from
+      // Post to PUBLISHED in the chosen audience; everyone else lands a draft
+      // in the feed exactly as before.
+      if (can('content.publish')) {
+        await publishContent(created._id);
+        toast.success('Post published');
+      } else {
+        toast.success('Post added to the feed');
+      }
+
       setComposer(EMPTY_COMPOSER);
-      toast.success('Post added to the feed');
       refresh();
     } catch (caught) {
       toast.error(normalizeApiError(caught).message);
@@ -445,50 +467,6 @@ export function ContentFeedPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-1">
-                    {can('content.approve') && item.status === 'PENDING_REVIEW' && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          void runAction(() => approveContent(item._id), 'Post approved')
-                        }
-                      >
-                        Approve
-                      </Button>
-                    )}
-                    {can('content.approve') && item.status === 'PENDING_REVIEW' && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          void runAction(() => rejectContent(item._id), 'Post rejected')
-                        }
-                      >
-                        Reject
-                      </Button>
-                    )}
-                    {can('content.publish') && item.status === 'APPROVED' && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          void runAction(() => publishContent(item._id), 'Post published')
-                        }
-                      >
-                        Publish
-                      </Button>
-                    )}
-                    {can('content.update') && item.status === 'DRAFT' && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          void runAction(() => submitContent(item._id), 'Sent for review')
-                        }
-                      >
-                        Submit
-                      </Button>
-                    )}
                     {can('content.publish') && item.status === 'PUBLISHED' && (
                       <Button
                         size="sm"
