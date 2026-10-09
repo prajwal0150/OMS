@@ -11,6 +11,8 @@ export interface PublicListOptions {
   community?: string;
   sort?: string;
   order?: 'asc' | 'desc';
+  /** Filters applied on the first render (defaults to none). */
+  initialFilters?: Record<string, string>;
 }
 export interface PublicListState<T> {
   items: T[];
@@ -40,7 +42,7 @@ export function usePublicList<T>(
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(options.page ?? 1);
   const [search, setSearchState] = useState(options.search ?? '');
-  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [filters, setFilters] = useState<Record<string, string>>(options.initialFilters ?? {});
 
   const load = useCallback(async () => {
     setLoading(true);

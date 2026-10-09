@@ -17,6 +17,20 @@ import '../styles/motion.css';
 const pickByTypes = (items: ContentRecord[], types: string[]) =>
   items.filter((i) => types.includes(i.contentType));
 
+/**
+ * Types the Activities section renders, newest first. `NEWS` and `ACTIVITY`
+ * are what the admin composer publishes, so every post that goes live shows up
+ * in this section; the legacy activity-ish types keep their slots behind it.
+ */
+const ACTIVITY_SECTION_TYPES = [
+  'ACTIVITY',
+  'NEWS',
+  'TRAINING',
+  'AWARENESS',
+  'MEETING_REPORT',
+  'EVENT_STORY',
+];
+
 /** Content-first story homepage: hero, live stories, events, gallery, CTA. */
 export function HomePage() {
   const content = usePublicList<ContentRecord>(fetchContentPublic, { limit: 12 });
@@ -27,7 +41,7 @@ export function HomePage() {
 
   const items = content.items;
   const latest = items.slice(0, 5);
-  const activities = pickByTypes(items, ['ACTIVITY', 'TRAINING', 'AWARENESS', 'MEETING_REPORT', 'EVENT_STORY']).slice(0, 4);
+  const activities = pickByTypes(items, ACTIVITY_SECTION_TYPES).slice(0, 4);
   const activityFallback = activities.length > 0 ? activities : items.slice(0, 4);
   const communityStories = pickByTypes(items, ['COMMUNITY_STORY']).slice(0, 3);
   const editorial = items.slice(0, 3);

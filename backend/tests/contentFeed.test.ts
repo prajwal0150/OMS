@@ -46,7 +46,6 @@ describe('Content feed by district administrators', () => {
   let districtB: string;
   let unitA1: string;
   let foreignUnitId: string;
-  let superToken: string;
   let districtAdminAToken: string;
   let districtAdminBToken: string;
   let ownDocumentId = '';
@@ -60,7 +59,6 @@ describe('Content feed by district administrators', () => {
     unitA1 = await createUnit(districtA, 'Itahari Unit', 'SUN-IT');
     foreignUnitId = await createUnit(districtB, 'Damak Unit', 'JHA-DM');
 
-    await createUser({ email: 'super.feed@hps.test', role: ROLE_NAMES.SUPER_ADMIN });
     await createUser({
       email: 'dadmin.feed.a@hps.test',
       role: ROLE_NAMES.DISTRICT_ADMIN,
@@ -72,7 +70,6 @@ describe('Content feed by district administrators', () => {
       district: districtB,
     });
 
-    superToken = await login('super.feed@hps.test');
     districtAdminAToken = await login('dadmin.feed.a@hps.test');
     districtAdminBToken = await login('dadmin.feed.b@hps.test');
 
@@ -165,22 +162,33 @@ describe('Content feed by district administrators', () => {
     expect(submitted.body.data.status).toBe(CONTENT_STATUS.PENDING_REVIEW);
   });
 
-  it('never lets a district administrator publish, only submit for review', async () => {
-    // Publishing is a Super Admin decision; a district admin must not be able to
-    // short-circuit the review queue even with a hand-crafted payload.
-    const direct = await request(app)
-      .post(`/api/content/${postId}/publish`)
+  it('publishes its own draft directly without a separate approval step', async () => {
+    // Publishing is no longer gated behind review: a district administrator
+    // holds content.publish, so the one-click Post flow takes a fresh draft
+    // live immediately, exactly as the composer does.
+    const draft = await request(app)
+      .post('/api/content')
+      .set(bearer(districtAdminAToken))
+      .send({
+        title: 'Blood donation camp',
+        content: 'A blood donation camp is organised at the community hall.',
+        contentType: CONTENT_TYPE.NEWS,
+        visibility: VISIBILITY.DISTRICT_ONLY,
+      });
+    expect(draft.status, JSON.stringify(draft.body)).toBe(201);
+    expect(draft.body.data.status).toBe(CONTENT_STATUS.DRAFT);
+    const draftId = String(draft.body.data._id);
+
+    const published = await request(app)
+      .post(`/api/content/${draftId}/publish`)
       .set(bearer(districtAdminAToken))
       .send({});
-    expect(direct.status).toBe(403);
-
-    const afterAttempt = await request(app)
-      .get(`/api/content/${postId}`)
-      .set(bearer(districtAdminAToken));
-    expect(afterAttempt.body.data.status).toBe(CONTENT_STATUS.PENDING_REVIEW);
+    expect(published.status, JSON.stringify(published.body)).toBe(200);
+    expect(published.body.data.status).toBe(CONTENT_STATUS.PUBLISHED);
+    expect(published.body.data.publishedAt).toBeTruthy();
   });
 
-  it('walks a post through review before it can be published', async () => {
+  it('walks a post through review and lets the district admin publish it', async () => {
     // The post is already PENDING_REVIEW from the previous case.
     const approved = await request(app)
       .post(`/api/content/${postId}/approve`)
@@ -189,19 +197,14 @@ describe('Content feed by district administrators', () => {
     expect(approved.status, JSON.stringify(approved.body)).toBe(200);
     expect(approved.body.data.status).toBe(CONTENT_STATUS.APPROVED);
 
-    // A district admin may approve but still may not publish.
+    // A district admin holds content.publish, so after approving their own
+    // submission they may take it live themselves - no Super Admin hand-off.
     const districtPublish = await request(app)
       .post(`/api/content/${postId}/publish`)
       .set(bearer(districtAdminAToken))
       .send({});
-    expect(districtPublish.status).toBe(403);
-
-    const superPublish = await request(app)
-      .post(`/api/content/${postId}/publish`)
-      .set(bearer(superToken))
-      .send({});
-    expect(superPublish.status, JSON.stringify(superPublish.body)).toBe(200);
-    expect(superPublish.body.data.status).toBe(CONTENT_STATUS.PUBLISHED);
+    expect(districtPublish.status, JSON.stringify(districtPublish.body)).toBe(200);
+    expect(districtPublish.body.data.status).toBe(CONTENT_STATUS.PUBLISHED);
   });
 
   it('keeps the feed of one district out of reach of the other', async () => {

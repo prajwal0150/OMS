@@ -14,10 +14,9 @@ const except = (excluded: Permission[]): Permission[] =>
  * it), so only the platform wide and account security permissions are withheld.
  * The backend scope guard still pins every write to the caller's own district.
  *
- * `content.publish` is withheld as well: publishing is a single, organisation
- * wide editorial decision. A district administrator still holds `content.approve`
- * so they can review their own units' submissions, but only the Super Admin can
- * make content live on the public website.
+ * District administrators hold `content.publish` as well, so a Post can go
+ * live directly for the chosen audience with no separate approval step; the
+ * backend publishing workflow already permits publishing straight from a draft.
  */
 const DISTRICT_ADMIN_EXCLUDED: Permission[] = [
   PERMISSIONS.ORGANIZATION_UPDATE,
@@ -25,12 +24,11 @@ const DISTRICT_ADMIN_EXCLUDED: Permission[] = [
   PERMISSIONS.ROLE_MANAGE,
   PERMISSIONS.PERMISSION_MANAGE,
   PERMISSIONS.SETTINGS_MANAGE,
-  PERMISSIONS.CONTENT_PUBLISH,
 ];
 
 const UNIT_ADMIN_EXCLUDED: Permission[] = [
-  // Inherits CONTENT_PUBLISH: a unit administrator submits for review, the
-  // Super Admin publishes.
+  // Inherits everything a district admin may do, including `content.publish`,
+  // so a unit administrator posts their own content live for the chosen audience.
   ...DISTRICT_ADMIN_EXCLUDED,
   // Managing administrator accounts stays a district level job.
   PERMISSIONS.ADMIN_ACCOUNT_CREATE,
