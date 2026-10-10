@@ -30,7 +30,7 @@ export const contentFormDefaults: ContentFormValues = {
   language: 'en',
   unit: '',
   community: '',
-  visibility: 'UNIT',
+  visibility: 'PUBLIC',
   featured: false,
   allowComments: false,
   tags: '',
@@ -67,21 +67,23 @@ export interface ContentFormFieldsProps {
 
 const CONTENT_TYPES = [
   { value: 'NEWS', label: 'News' },
-  { value: 'ANNOUNCEMENT', label: 'Announcement' },
-  { value: 'ARTICLE', label: 'Article' },
-  { value: 'STORY', label: 'Story' },
-  { value: 'ACHIEVEMENT', label: 'Achievement' },
-  { value: 'EVENT_RECAP', label: 'Event recap' },
+  { value: 'ACTIVITY', label: 'Activity' },
+  { value: 'DISTRICT_UPDATE', label: 'District update' },
+  { value: 'UNIT_UPDATE', label: 'Unit update' },
   { value: 'AWARENESS', label: 'Awareness' },
-  { value: 'DOCUMENT', label: 'Document' },
+  { value: 'TRAINING', label: 'Training' },
+  { value: 'ACHIEVEMENT', label: 'Achievement' },
+  { value: 'EVENT_STORY', label: 'Event story' },
+  { value: 'OTHER', label: 'Other' },
 ];
 
 const VISIBILITIES = [
   { value: 'PUBLIC', label: 'Public website' },
-  { value: 'DISTRICT', label: 'District only' },
-  { value: 'UNIT', label: 'Unit only' },
-  { value: 'COMMUNITY', label: 'Community only' },
-  { value: 'PRIVATE', label: 'Private (staff only)' },
+  { value: 'MEMBERS_ONLY', label: 'Members only' },
+  { value: 'DISTRICT_ONLY', label: 'District only' },
+  { value: 'UNIT_ONLY', label: 'Unit only' },
+  { value: 'COMMUNITY_ONLY', label: 'Community only' },
+  { value: 'COMMITTEE_ONLY', label: 'Committee only' },
 ];
 
 /** Shared content authoring fields, used by both the create and edit screens. */
